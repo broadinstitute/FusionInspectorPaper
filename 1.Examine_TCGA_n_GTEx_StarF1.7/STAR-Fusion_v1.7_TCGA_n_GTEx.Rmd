@@ -1,0 +1,328 @@
+---
+title: "STAR-Fusion_v1.7_TCGA_n_GTEx"
+author: "Brian Haas"
+date: "2/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+data = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+data = data %>% mutate(dataclassTN = paste0(data_class, "-", tumor_or_normal))
+
+#Count numbers of samples before basic filtering
+
+data %>% select(dataclassTN, sample_name) %>% unique() %>% ungroup() %>% group_by(dataclassTN) %>% tally()
+
+## some initial cleanup
+data = data %>% 
+  filter(! grepl("chrM", Annots)) %>%
+  filter(! grepl("HLA", fusion_name)) %>%
+  filter(! (grepl("^IG[HKVL]", LeftGene) & grepl("^IG[HKVL]", RightGene)))
+
+## only consider the primary isoform.
+data = data %>% filter(is_primary)
+
+# remove 'neighbors' (the more obvious readthrus)
+data = data %>% filter(! grepl("NEIGHBORS", Annots))
+
+# require reference splicing
+data = data %>% filter(SpliceType == "ONLY_REF_SPLICE")
+
+
+#Count numbers of samples post basic filtering
+
+data %>% select(dataclassTN, sample_name) %>% unique() %>% ungroup() %>% group_by(dataclassTN) %>% tally()
+
+```
+
+
+
+
+```{r}
+
+get_FPM_vs_min_FFPM_via_tissue_type = function (data, min_ffpm_vals = seq(0, 0.3, 0.05)) {
+    
+    fusion_counts_vs_min_ffpm = NULL
+    
+    
+    samples_n_tissues = data %>% select(data_class, dataclassTN, tissue_type, sample_name) %>% unique()
+    
+    
+    for (min_ffpm in min_ffpm_vals) {
+        message(min_ffpm)
+        
+        data_filt = data %>% filter(FFPM >= min_ffpm)
+        
+        counts_per_filt_sample = data_filt %>% select(data_class, dataclassTN, tissue_type, sample_name, fusion_name) %>% 
+            unique() %>% group_by(data_class, dataclassTN, tissue_type, sample_name) %>% tally(name='fusion_count')
+        
+        counts_per_filt_sample = left_join(samples_n_tissues, counts_per_filt_sample, 
+                                           by=c('data_class', 'dataclassTN', 'tissue_type', 'sample_name')) %>%
+        mutate(fusion_count = ifelse(is.na(fusion_count), 0, fusion_count))
+        
+        
+        
+        counts_per_filt_sample$min_ffpm = min_ffpm
+        
+        fusion_counts_vs_min_ffpm = rbind(fusion_counts_vs_min_ffpm, counts_per_filt_sample)
+        
+    }
+    
+    return(fusion_counts_vs_min_ffpm)
+}
+
+
+```
+
+
+```{r}
+
+
+
+tissue_fusion_counts_vs_min_ffpm = get_FPM_vs_min_FFPM_via_tissue_type(data)
+
+
+```
+
+
+Compute median fusion count for each tissue type
+
+```{r}
+median_tissue_fusion_counts = tissue_fusion_counts_vs_min_ffpm  %>% 
+    group_by(data_class, dataclassTN, tissue_type, min_ffpm) %>% 
+    summarize(median_fusion_count = median(fusion_count)) %>% ungroup()
+
+median_tissue_fusion_counts 
+```
+
+Counts of GTEx-normal fusions vs. min FFPM
+
+```{r}
+median_tissue_fusion_counts %>% filter(dataclassTN == "GTEx-normal") %>% 
+    ggplot(aes(x=min_ffpm, y=median_fusion_count, color=tissue_type)) + geom_point() + geom_line()
+
+```
+
+Counts of TCGA-tumor fusions vs. min FFPM
+
+```{r}
+median_tissue_fusion_counts %>% filter(dataclassTN == "TCGA-tumor") %>% 
+    ggplot(aes(x=min_ffpm, y=median_fusion_count, color=tissue_type)) + geom_point() + geom_line()
+
+```
+
+
+Jitter plots for counts of fusions per tissue type according to data class (ie. tcga-tumor, tcga-normal, and gtex-normal)
+```{r}
+
+
+min_ffpms = median_tissue_fusion_counts %>% select(min_ffpm) %>% unique() %>% arrange(min_ffpm) %>% pull(min_ffpm)
+
+for (min_ffpm_use in min_ffpms) {
+    
+    
+    p = median_tissue_fusion_counts %>% filter(min_ffpm == min_ffpm_use) %>%
+        ggplot(aes(x = dataclassTN, y=median_fusion_count)) + 
+        geom_point(position = position_jitter(w = 0.1, h = 0)) +
+        ggtitle(paste("median fusion counts/sample with min FFPM=", min_ffpm_use))
+    
+       
+    plot(p)
+    
+}
+```
+
+
+Plot TCGA tumor/normal median fusion counts according to matched sample types.
+
+```{r}
+
+tcga_tissues_with_matched_normals = median_tissue_fusion_counts %>% filter(dataclassTN == "TCGA-normal") %>% 
+    select(tissue_type) %>% unique() %>% pull(tissue_type)
+
+
+for (min_ffpm_use in min_ffpms) {
+    
+   p = median_tissue_fusion_counts %>% filter(data_class == "TCGA" & tissue_type %in% tcga_tissues_with_matched_normals) %>%
+    filter(min_ffpm == min_ffpm_use) %>%
+    ggplot(aes(x=tissue_type, y=median_fusion_count, fill=dataclassTN)) + geom_col(position='dodge') + 
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) +
+       ggtitle(paste("Median TCGA fusion counts at min FFPM threshold: ", min_ffpm_use))
+   
+   plot(p)
+   
+}
+
+```
+
+
+```{r}
+
+
+for (min_ffpm_use in min_ffpms) {
+
+    p =  median_tissue_fusion_counts %>% 
+        filter(min_ffpm == min_ffpm_use) %>% 
+        group_by(dataclassTN, min_ffpm) %>% 
+        summarize(median_of_medians = median(median_fusion_count)) %>%
+        ggplot(aes(x=dataclassTN, y=median_of_medians)) + geom_col() + 
+        ggtitle(paste("Median of median fusion counts, min ffpm = ", min_ffpm_use))
+    
+    plot(p)
+
+}
+
+```
+
+
+# Examine distribution of fusion expression levels
+
+```{r}
+
+data2 = data %>% mutate(dataclass2 = dataclassTN) %>% 
+    mutate(dataclass2 = ifelse(grepl("Cosmic",Annots), "Cosmic", dataclass2))
+
+cosmic_fusion_FFPM = data2 %>% filter(dataclass2 == "Cosmic") %>% pull(FFPM)
+GTEx_normal_FFPM = data2 %>% filter(dataclassTN == "GTEx-normal") %>% pull(FFPM)
+TCGA_tumor_FFPM = data2 %>% filter(dataclassTN == "TCGA-tumor") %>% pull(FFPM)
+TCGA_normal_FFPM = data2 %>% filter(dataclassTN == "TCGA-normal") %>% pull(FFPM)
+
+df_FFPM = bind_rows( data.frame(dataclass="Cosmic", FFPM=cosmic_fusion_FFPM),
+                     data.frame(dataclass="GTEx-normal", FFPM=GTEx_normal_FFPM),
+                     data.frame(dataclass="TCGA-tumor", FFPM=TCGA_tumor_FFPM),
+                     data.frame(dataclass="TCGA-normal", FFPM=TCGA_normal_FFPM) )
+                     
+df_FFPM %>% mutate(FFPM_max1 = pmin(1, FFPM)) %>% ggplot(aes(x=FFPM_max1, color=dataclass)) + geom_density(alpha=0.2) + xlim(0, 1)
+
+```
+
+Compare ECDFs for the above.
+```{r}
+
+cosmic_fusion_FFPM_ecdf = ecdf(cosmic_fusion_FFPM)
+GTEx_normal_FFPM_ecdf = ecdf(GTEx_normal_FFPM)
+TCGA_tumor_FFPM_ecdf = ecdf(TCGA_tumor_FFPM)
+TCGA_normal_FFPM_ecdf = ecdf(TCGA_normal_FFPM)
+
+ecdf_range = seq(0, 3, 0.01)
+
+df_ecdf = bind_rows( data.frame(dataclass="Cosmic", minFFPM=ecdf_range, cum_frac=cosmic_fusion_FFPM_ecdf(ecdf_range)),
+                     data.frame(dataclass="GTEx-normal", minFFPM=ecdf_range, cum_frac=GTEx_normal_FFPM_ecdf(ecdf_range)),
+                     data.frame(dataclass="TCGA-tumor", minFFPM=ecdf_range, cum_frac=TCGA_tumor_FFPM_ecdf(ecdf_range)),
+                     data.frame(dataclass="TCGA-normal", minFFPM=ecdf_range, cum_frac=TCGA_normal_FFPM_ecdf(ecdf_range)) )
+
+df_ecdf %>% ggplot(aes(x=minFFPM, y=cum_frac, color=dataclass)) + geom_point()
+
+```
+
+```{r}
+message("GTEx ecdf at 0.1 ffpm: ", GTEx_normal_FFPM_ecdf(0.1))
+
+message("cosmic fusions ecdf at 0.1 ffpm: ", cosmic_fusion_FFPM_ecdf(0.1))
+
+```
+
+## Examine the COSMIC fusions:
+
+```{r}
+
+cosmic_fusion_occurrence = data2 %>% filter(data_class == "GTEx" | tumor_or_normal == "tumor") %>% 
+    filter(dataclass2 == "Cosmic") %>% 
+    select(fusion_name, sample_name, data_class, tissue_type) %>% 
+    unique() %>% 
+    mutate(sample_tissue = paste(data_class, tissue_type)) %>% 
+    select (fusion_name, sample_tissue) %>% 
+    group_by(fusion_name, sample_tissue) %>% 
+    tally()
+
+
+sample_tissue_counts = data2 %>% filter(data_class == "GTEx" | tumor_or_normal == "tumor") %>% 
+    select(sample_name, data_class, tissue_type) %>% 
+    mutate(sample_tissue = paste(data_class, tissue_type)) %>% 
+    select(sample_name, sample_tissue) %>% 
+    unique() %>% 
+    group_by(sample_tissue) %>% 
+    tally()
+
+sample_tissue_counts = sample_tissue_counts %>% rename(sample_tissue_count = n)
+
+cosmic_fusion_occurrence = left_join(x=cosmic_fusion_occurrence, y=sample_tissue_counts, by='sample_tissue')
+
+cosmic_fusion_occurrence = cosmic_fusion_occurrence %>% mutate(sample_pct = n / sample_tissue_count * 100)
+
+ranked_fusions = cosmic_fusion_occurrence %>% 
+    group_by(fusion_name) %>% 
+    summarize(sumpct= sum(sample_pct)) %>% 
+    arrange(desc(sumpct)) %>% 
+    select(fusion_name)
+ 
+cosmic_fusion_occurrence %>% 
+    ggplot(aes(x=factor(fusion_name, levels=ranked_fusions$fusion_name), y=sample_pct, fill=sample_tissue)) + 
+    geom_col() + 
+    theme(axis.text.x=element_text(angle = 90, hjust = 0, size=rel(0.5))) 
+```
+
+
+
+Examine distribution of FFPM for cosmic fusions
+
+```{r}
+
+
+data2 %>% filter(dataclass2 == "Cosmic") %>% 
+    ggplot(aes(x=reorder(fusion_name, FFPM, FUN = median), y=FFPM)) + 
+    geom_boxplot() +
+     theme(axis.text.x=element_text(angle = 90, hjust = 0, size=rel(0.5))) + 
+    scale_y_continuous(trans='log2') + 
+    ggtitle("Cosmic Fusion Expression Distribution")
+
+```
+
+# misc queries
+
+```{r}
+# restructure statistics to take into account all tissue types including tcga normals.
+
+# first get counts of all samples
+
+dataclassTN_tissue_counts = data %>% select(dataclassTN, tissue_type, sample_name) %>%
+  unique() %>% 
+  group_by(dataclassTN, tissue_type) %>% 
+  tally(name='sample_count')
+
+
+dataclassTN_tissue_fusion_sample_occurrence_counts = data %>% select(dataclassTN, tissue_type, sample_name, fusion_name) %>% unique() %>% group_by(dataclassTN, tissue_type, fusion_name) %>% tally(name='fusion_tissue_count')
+
+
+dataclassTN_tissue_fusion_stats = left_join(dataclassTN_tissue_fusion_sample_occurrence_counts,
+                                            dataclassTN_tissue_counts, 
+                                            by=c('dataclassTN', 'tissue_type'))
+
+dataclassTN_tissue_fusion_stats = dataclassTN_tissue_fusion_stats %>% mutate(frac_tissue_type = fusion_tissue_count/sample_count)
+
+```
+
+
+
+```{r}
+
+dataclassTN_tissue_fusion_stats  %>% filter(fusion_name == "TMPRSS2--ERG")
+
+```
+
+
+
+
+```{r}
+
+dataclassTN_tissue_fusion_stats  %>% filter(fusion_name == "FGFR3--TACC3") %>% 
+  arrange(desc(frac_tissue_type))
+
+
+```
