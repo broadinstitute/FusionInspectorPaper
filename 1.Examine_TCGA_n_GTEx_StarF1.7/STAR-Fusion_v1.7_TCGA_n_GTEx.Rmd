@@ -10,8 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
+
 ```{r}
-data = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+data = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
 data = data %>% mutate(dataclassTN = paste0(data_class, "-", tumor_or_normal))
 
@@ -28,8 +29,6 @@ data = data %>%
 ## only consider the primary isoform.
 data = data %>% filter(is_primary)
 
-# remove 'neighbors' (the more obvious readthrus)
-data = data %>% filter(! grepl("NEIGHBORS", Annots))
 
 # require reference splicing
 data = data %>% filter(SpliceType == "ONLY_REF_SPLICE")
@@ -51,7 +50,11 @@ get_FPM_vs_min_FFPM_via_tissue_type = function (data, min_ffpm_vals = seq(0, 0.3
     fusion_counts_vs_min_ffpm = NULL
     
     
-    samples_n_tissues = data %>% select(data_class, dataclassTN, tissue_type, sample_name) %>% unique()
+    # ignore READTHRU fusions here
+    
+    samples_n_tissues = data %>%   
+      filter(structure_type != "READTHRU") %>% 
+      select(data_class, dataclassTN, tissue_type, sample_name) %>% unique()
     
     
     for (min_ffpm in min_ffpm_vals) {
@@ -283,6 +286,55 @@ data2 %>% filter(dataclass2 == "Cosmic") %>%
     ggtitle("Cosmic Fusion Expression Distribution")
 
 ```
+
+
+
+Examine distribution of structural categories according to min FFPM and data class
+
+```{r}
+
+min_ffpm_vals = seq(0, 0.3, 0.05)
+
+category_pcts_vs_min_ffpm = NULL
+
+for (min_FFPM in min_ffpm_vals) {
+  
+  
+  
+  category_pcts = data %>% filter(structure_type != "OTHER") %>% 
+    filter(FFPM >= min_FFPM) %>%
+    group_by(dataclassTN, structure_type) %>% 
+    tally() %>% 
+    mutate(pct=prop.table(n)) 
+  
+  cosmic_pcts = data %>% filter(cosmic) %>% 
+    filter(FFPM >= min_FFPM) %>%
+    mutate(dataclassTN = "COSMIC") %>%
+    group_by(dataclassTN, structure_type) %>% 
+    tally() %>% 
+    mutate(pct=prop.table(n))
+  
+  
+  category_pcts = bind_rows(category_pcts, cosmic_pcts)
+  
+  category_pct_plot = category_pcts %>% ggplot(aes(x=dataclassTN, y=pct, fill=structure_type) ) + geom_col() +
+    ggtitle(paste("minFFPM = ", min_FFPM))
+  
+  category_pcts$min_FFPM = min_FFPM
+  category_pcts_vs_min_ffpm = bind_rows(category_pcts_vs_min_ffpm, category_pcts)
+  
+  plot(category_pct_plot)
+}
+
+```
+
+
+```{r}
+
+category_pcts_vs_min_ffpm  %>% ggplot(aes(x=min_FFPM, y=pct, shape=structure_type, color=structure_type)) + geom_line() + geom_point() + facet_wrap(~dataclassTN) + ylim(c(0,0.8))
+
+```
+
 
 # misc queries
 

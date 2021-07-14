@@ -1,0 +1,112 @@
+---
+title: "A.decorate_input_files"
+author: "Brian Haas"
+date: "2/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+# retrieve full list of the original STAR-F fusions
+orig_starF_fusions_FULL= read.table(gzfile("../data/fusions_consolidated.Sep2019.dat.gz"), 
+                                     header=T, sep="\t", stringsAsFactors = F, check.names = F)
+
+
+# include coding info
+coding_info = read.table(gzfile("../data/fusions.coding_effects.abridged.tsv.gz"), header=T, sep="\t", com='')
+
+coding_info = coding_info %>% rename(fusion_name=X.FusionName) 
+coding_info = coding_info %>% select(fusion_name, LeftBreakpoint, RightBreakpoint, PROT_FUSION_TYPE)
+
+coding_info$PROT_FUSION_TYPE = factor(str_replace( as.character(coding_info$PROT_FUSION_TYPE), "\\.", "INCL_NONCODING") )
+
+orig_starF_fusions_FULL= left_join(orig_starF_fusions_FULL, coding_info, 
+                                    by=c('fusion_name', 'LeftBreakpoint', 'RightBreakpoint'))
+
+# include tumor or normal sample definition
+# define as tumor or normal sample
+orig_starF_fusions_FULL= orig_starF_fusions_FULL%>% 
+  mutate(tumor_or_normal = ifelse(data_class=="GTEx" | grepl("-NT$", sample_name), "normal", "tumor"))
+
+# count number of tumor and normal samples.
+tumor_normal_sample_counts = orig_starF_fusions_FULL%>% select(sample_name, tumor_or_normal) %>% unique() %>% group_by(tumor_or_normal) %>% tally()
+
+total_tumor_samples = tumor_normal_sample_counts %>% filter(tumor_or_normal == "tumor") %>% pull(n)
+total_normal_samples = tumor_normal_sample_counts %>% filter(tumor_or_normal == "normal") %>% pull(n)
+
+orig_starF_fusions_FULL= orig_starF_fusions_FULL%>% 
+  group_by(fusion_name, sample_name) %>% 
+  arrange(FFPM) %>% mutate(is_primary = (row_number() == n())) %>% ungroup()
+
+cosmic_fusions = read.table("../data/cosmic.list", header=F)[,1]
+
+orig_starF_fusions_FULL= orig_starF_fusions_FULL%>% mutate(cosmic = (fusion_name %in% cosmic_fusions))
+
+```
+
+
+organize into tumor / normal counts and compute log(T/N)
+
+```{r}
+
+orig_starF_fusions_FULL_stats = orig_starF_fusions_FULL%>% 
+  filter(is_primary) %>%
+  group_by(fusion_name, tumor_or_normal) %>% tally() %>% 
+  spread(key=tumor_or_normal, value=n, fill=0) %>%
+  rowwise() %>%
+  mutate(total=normal+tumor) %>%
+  mutate(logTN = log( ((tumor+1)/(total_tumor_samples+1)) / ((normal+1)/(total_normal_samples+1)) ) )
+
+
+```
+
+
+Simplify structure annotations
+
+```{r}
+orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% mutate(annot_adj = Annots)
+
+orig_starF_fusions_FULL$annot_adj = str_replace(orig_starF_fusions_FULL$Annots, 
+                                                      "NEIGHBORS_OVERLAP", "LOCAL_REARRANGMENT")
+orig_starF_fusions_FULL$annot_adj = str_replace(orig_starF_fusions_FULL$Annots, "LOCAL_INVERSION", "LOCAL_REARRANGMENT") 
+
+
+orig_starF_fusions_FULL$structure_type = "OTHER"
+
+orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% mutate(structure_type = ifelse(grepl("INTRACHROMOSOMAL", annot_adj),
+                                                                               "IntraCHR", structure_type))
+
+orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% mutate(structure_type = ifelse(grepl("INTERCHROMOSOMAL", annot_adj), 
+                                                                               "INTERCHR", structure_type))
+
+
+orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% mutate(structure_type = ifelse(grepl("LOCAL_REARRANGMENT", annot_adj),
+                                                                               "LOCAL_REARRANGEMENT", structure_type))
+
+orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% mutate(structure_type = ifelse(grepl("NEIGHBORS", annot_adj), 
+                                                                               "READTHRU", structure_type))
+
+
+message("Counts of structure types according to unique fusions among cosmic-like clusters")
+table(orig_starF_fusions_FULL %>% select(fusion_name, structure_type) %>% unique() %>% pull(structure_type))
+
+orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% select(-annot_adj)
+
+
+```
+
+Save outputs for use downstream.
+
+```{r}
+write.table(orig_starF_fusions_FULL, file="TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv", quote=F, sep="\t", row.names = F)
+
+write.table(orig_starF_fusions_FULL_stats, file="TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv", quote=F, sep="\t", row.names = F)
+
+```
+
+
+
