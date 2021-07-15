@@ -1,0 +1,66 @@
+---
+title: "Tumor_vs_Normal_Fusion_Expression"
+author: "Brian Haas"
+date: "2/11/2021"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(cowplot)
+```
+
+```{r}
+# pull in the original STAR-Fusion results for T/N findings and other annotated fusion attributes.
+
+orig_STARF_fusion_preds = read.table(gzfile("data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+orig_STARF_tumor_normal_stats = read.table(gzfile("data/TCGA_n_GTEx.STAR-Fusion.v1.7.tumor_normal_stats.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+
+```
+
+
+
+```{r}
+
+fusions_to_test_expr_ranking = orig_STARF_tumor_normal_stats %>% filter(tumor > 3 & normal > 3) %>% pull(fusion_name)
+
+pvals = NULL
+
+for (fusion in fusions_to_test_expr_ranking) {
+    #message("fusion: ", fusion)
+    these_fusions = orig_STARF_fusion_preds %>% filter(fusion_name == fusion) %>% filter(is_primary)
+    
+    tumor_vals = these_fusions %>% filter(tumor_or_normal == "tumor") %>% pull(FFPM)
+    normal_vals = these_fusions %>% filter(tumor_or_normal == "normal") %>% pull(FFPM)
+    
+    
+    w = wilcox.test(tumor_vals, normal_vals, exact=FALSE, alternative = 'greater')
+    t = t.test(tumor_vals, normal_vals, alternative = 'greater')
+    
+    tumor_median = median(tumor_vals)
+    normal_median = median(normal_vals)
+    
+    pvals = bind_rows(pvals, data.frame(fusion_name=fusion,
+                                        tumor_median = tumor_median, normal_median = normal_median,
+                                        fold_change = tumor_median / normal_median,
+                                        t_p=t$p.value,
+                                        w_p=w$p.value))
+    
+    
+    
+  
+}
+
+```
+
+```{r}
+
+write.table(pvals, file="TCGA_n_GTEx.STAR-Fusion.v1.7.tumor_normal_fusion_expression_comparison_stats.tsv", 
+            quote=F, sep="\t", row.names = F)
+
+
+```
