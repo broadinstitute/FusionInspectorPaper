@@ -1,0 +1,121 @@
+---
+title: "C4_targeted_FI"
+author: "Brian Haas"
+date: "2/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(cowplot)
+```
+
+```{r}
+
+fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.C4_targeted_fusions.tsv.gz"), header=T, 
+                         sep="\t", stringsAsFactors = F)
+
+FI_samples = read.table("../data/FusionInspector.v2.4.0.C4_targeted_fusions.samples.list", header=F, stringsAsFactors = F)[,1]
+
+fusions_of_interest = fusion_data %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
+
+```
+
+Assess fusion cluster prediction types.
+
+```{r}
+
+fusion_annot_class_stats = fusion_data %>% filter(is_primary) %>%
+    mutate(annot_type = fusion_cluster_att) %>%
+    mutate(annot_type = ifelse((is.na(fusion_cluster_att) | fusion_cluster_att == "NA"), "other", fusion_cluster_att)) %>%
+    mutate(annot_type = ifelse(grepl("artifact", fusion_cluster_att), "artifact", annot_type)) %>%
+    mutate(annot_type = ifelse(grepl("cosmic", fusion_cluster_att), "cosmic-like", annot_type)) %>%
+    group_by(fusion_name, cosmic, annot_type) %>% tally() %>% mutate(frac=prop.table(n)) %>%
+    select(-n) %>%
+    spread(key=annot_type, value=frac, fill=0) %>%
+    arrange(desc(`cosmic-like`))
+
+fusion_fraction_C4 = fusion_data %>% 
+    filter(is_primary) %>%
+    mutate(in_c4 = (pred_cluster == 4)) %>%
+    group_by(fusion_name, in_c4) %>%
+    tally() %>%
+    mutate(frac=prop.table(n)) %>%
+    select(fusion_name, in_c4, frac) %>%
+    spread(key=in_c4, value=frac, fill=0) %>%
+    select(fusion_name, frac_in_C4 = `TRUE`)
+
+
+fusion_annot_class_stats = left_join(fusion_annot_class_stats, fusion_fraction_C4, by='fusion_name')
+
+fusion_annot_class_stats
+```
+
+```{r}
+# pull in the original STAR-Fusion results for T/N findings and other annotated fusion attributes.
+
+orig_STARF_fusion_preds = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz"), 
+                                     header=T, sep="\t", stringsAsFactors = F) %>%
+    filter(fusion_name %in% fusions_of_interest)
+
+
+orig_STARF_tumor_normal_stats = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz"), 
+                                           header=T, sep="\t", stringsAsFactors = F) %>%
+    filter(fusion_name %in% fusions_of_interest)
+
+
+orig_STARF_tumor_normal_expression_stats = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.tumor_normal_fusion_expression_comparison_stats.tsv.gz"), 
+                                                      header=T, sep="\t", stringsAsFactors = F) %>%
+    filter(fusion_name %in% fusions_of_interest)
+
+# merge expression stats into the tumor/normal stats
+orig_STARF_tumor_normal_stats = left_join(orig_STARF_tumor_normal_stats, orig_STARF_tumor_normal_expression_stats, by='fusion_name')
+
+# rank fusions by logTN
+
+fusions_ranked_by_logTN = orig_STARF_tumor_normal_stats %>% arrange(desc(logTN)) %>% pull(fusion_name)
+
+fusion_data$fusion_name = factor(fusion_data$fusion_name, levels=fusions_ranked_by_logTN)
+
+orig_STARF_fusion_preds$fusion_name = factor(orig_STARF_fusion_preds$fusion_name, levels=fusions_ranked_by_logTN)
+
+orig_STARF_tumor_normal_stats$fusion_name = factor(orig_STARF_tumor_normal_stats$fusion_name, levels=fusions_ranked_by_logTN)
+
+fusion_annot_class_stats$fusion_name = factor(fusion_annot_class_stats$fusion_name, levels=fusions_ranked_by_logTN)
+
+```
+
+
+
+
+```{r}
+
+fusion_annot_class_stats = fusion_annot_class_stats %>%
+    gather(key=cluster_annot_type, value=frac_fusions, artifact, `cosmic-like`, high_counter_evidence, other, frac_in_C4)
+```
+
+
+```{r}
+fusion_annot_class_stats %>%
+    ggplot(aes(x=fusion_name, y=frac_fusions)) + geom_col(aes(fill=cosmic)) +
+    facet_wrap(~cluster_annot_type, ncol = 1) + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size=rel(0.3) ))
+```
+
+```{r}
+
+source("../Rlib/fusion_plotting_routines.R")
+
+plot_ranked_fusions(fusions_ranked_by_logTN)
+
+```
+
+
+```{r}
+
+batch_ranked_fusion_plots(fusions_ranked_by_logTN)
+
+```
+
+
