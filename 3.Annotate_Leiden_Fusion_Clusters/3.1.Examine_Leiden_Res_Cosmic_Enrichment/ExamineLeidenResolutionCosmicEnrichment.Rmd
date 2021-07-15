@@ -1,0 +1,100 @@
+---
+title: "Examine Leiden Resolution Cosmic Fusion Enrichment"
+author: "Brian Haas"
+date: "2/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+
+```{r}
+run_fishers_exact_test = function(yes_cosmic, no_cosmic, tot_cosmic_fusions, tot_noncosmic_fusions) {
+    
+    confusion_matrix = matrix(c(yes_cosmic, no_cosmic,
+                                tot_cosmic_fusions - yes_cosmic, tot_noncosmic_fusions - no_cosmic),
+                              nrow=2, byrow = T)    
+    
+    f = fisher.test(confusion_matrix, alternative = 'greater')
+    
+    return(f$p.value)
+    
+}
+```
+
+
+
+
+```{r}
+
+files = list.files(path = "./__data", pattern="FIdevx2.fusion_table.scaled.umap.leiden.res.*tsv.gz")
+
+summary_df = NULL
+
+for (filename in files) {
+    message("-processing file: ", filename)
+    data = read.table(gzfile(paste0("./__data/",filename)), header=T)
+    data = data %>% filter(is_primary)
+    
+    resolution = str_replace(filename, "FIdevx2.fusion_table.scaled.umap.leiden.res", "")
+    resolution = str_replace(resolution, ".tsv.gz", "")
+    
+    cosmic_cluster_count_info = data %>% group_by(leiden, cosmic) %>% tally() %>% 
+        spread(cosmic, n, fill=0) %>% rename(yes_cosmic = `TRUE`, no_cosmic = `FALSE`)
+ 
+    tot_cosmic_fusions = sum(cosmic_cluster_count_info$yes_cosmic)
+    tot_noncosmic_fusions = sum(cosmic_cluster_count_info$no_cosmic)
+    
+    cosmic_cluster_info = cosmic_cluster_count_info %>% mutate(pval = 
+                                                                   run_fishers_exact_test(
+        yes_cosmic, no_cosmic, tot_cosmic_fusions, tot_noncosmic_fusions)
+        )
+    
+    cosmic_cluster_info$resolution = resolution
+    
+    cosmic_cluster_info = cosmic_cluster_info %>% mutate(negLOGp = -1 * log10(pval))
+    
+    summary_df = bind_rows(summary_df, cosmic_cluster_info)
+    
+    
+       
+}
+
+
+
+```
+
+
+
+
+```{r}
+
+
+summary_df %>% ggplot(aes(x=no_cosmic+yes_cosmic, y=yes_cosmic, color = negLOGp)) + geom_point() +
+    facet_wrap(~resolution, scale='free')
+
+
+```
+
+
+```{r}
+summary_df %>% filter(resolution == 3) %>% arrange(desc(negLOGp))
+
+
+```
+
+
+# just simple counts of number of clusters vs. Leiden resolution param
+```{r}
+
+summary_df %>% group_by(resolution) %>% tally() %>% ggplot(aes(x=as.numeric(resolution), y=n)) + geom_point() + ylab("# clusters") + xlab("resolution parameter")
+
+```
+
+
+
+

@@ -15,9 +15,9 @@ library(cowplot)
 ```{r}
 # pull in the original STAR-Fusion results for T/N findings and other annotated fusion attributes.
 
-orig_STARF_fusion_preds = read.table(gzfile("data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+orig_STARF_fusion_preds = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
-orig_STARF_tumor_normal_stats = read.table(gzfile("data/TCGA_n_GTEx.STAR-Fusion.v1.7.tumor_normal_stats.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+orig_STARF_tumor_normal_stats = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
 
 ```
