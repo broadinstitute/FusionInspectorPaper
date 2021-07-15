@@ -415,8 +415,68 @@ fusion_data %>% filter(fusion_name %in% cosmic_fusions_in_C4) %>% filter(leiden=
 
 
 
+```{r}
+run_fishers_exact_test = function(yes_cosmic, no_cosmic, tot_cosmic_fusions, tot_noncosmic_fusions) {
+    
+    confusion_matrix = matrix(c(yes_cosmic, no_cosmic,
+                                tot_cosmic_fusions - yes_cosmic, tot_noncosmic_fusions - no_cosmic),
+                              nrow=2, byrow = T)    
+    
+    f = fisher.test(confusion_matrix, alternative = 'greater')
+    
+    return(f$p.value)
+    
+}
 
 
+cosmic_cluster_count_info = fusion_data %>% filter(is_primary) %>%
+    group_by(leiden, cosmic) %>% tally() %>% 
+    spread(cosmic, n, fill=0) %>% rename(yes_cosmic = `TRUE`, no_cosmic = `FALSE`)
+
+tot_cosmic_fusions = sum(cosmic_cluster_count_info$yes_cosmic)
+tot_noncosmic_fusions = sum(cosmic_cluster_count_info$no_cosmic)
+
+cosmic_cluster_info = cosmic_cluster_count_info %>% mutate(pval = 
+                                                               run_fishers_exact_test(
+                                                                   yes_cosmic, no_cosmic, 
+                                                                   tot_cosmic_fusions, tot_noncosmic_fusions)
+)
+
+
+cosmic_cluster_info = cosmic_cluster_info %>% mutate(negLOGp = -1 * log10(pval))
+
+
+
+cosmic_cluster_info %>% ggplot(aes(x=leiden, y=negLOGp)) + geom_col() 
+
+
+```
+
+
+```{r}
+
+
+cosmic_cluster_info %>% ggplot(aes(x=no_cosmic+yes_cosmic, y=yes_cosmic, color = negLOGp)) + geom_point() 
+
+
+```
+
+
+```{r}
+cosmic_cluster_info %>% ungroup() %>%  mutate(tot_fusions = yes_cosmic + no_cosmic) %>%
+    mutate(pct_all_cosmic_fusions=prop.table(yes_cosmic))  %>%
+    mutate(pct_tot_fusions = prop.table(tot_fusions)) %>% 
+               arrange(desc(negLOGp))
+
+
+```
+```{r}
+# find those cosmic clusters having at least two instances. 
+#  we'll call all of these the cosmic-like fusion clusters
+
+cosmic_cluster_info %>% filter(yes_cosmic >= 2)
+
+```
 
 
 
