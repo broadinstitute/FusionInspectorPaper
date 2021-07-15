@@ -1,0 +1,179 @@
+---
+title: "KANSL1"
+author: "Brian Haas"
+date: "2/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r}
+orig_STARF_fusion_preds = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz"), 
+                                     header=T, sep="\t", stringsAsFactors = F)
+
+```
+
+
+The KANSL1--LRRC37A fusion is thought to be related to KANSL-ALR17 based on the genomic haplotype
+
+```{r}
+
+samples_with_KANSL1_ARL17 = orig_STARF_fusion_preds %>% filter(grepl("KANSL1--ARL17", fusion_name)) %>% select(sample_name) %>% unique() %>% mutate(ARL17=TRUE)
+
+message("Num samples with KANSL1_ARL17: ", nrow(samples_with_KANSL1_ARL17))
+
+samples_with_KANSL1_LRRC37 = orig_STARF_fusion_preds %>% filter(grepl("KANSL1--LRRC37", fusion_name)) %>% select(sample_name) %>% unique() %>% mutate(LRRC37 = TRUE)
+
+message("Num samples with KANSL1_LRRC37: ", nrow(samples_with_KANSL1_LRRC37))
+
+
+kansl1_fusion_content = full_join(samples_with_KANSL1_ARL17, samples_with_KANSL1_LRRC37)
+
+kansl1_fusion_content = kansl1_fusion_content %>% replace(is.na(.), FALSE)
+
+table(kansl1_fusion_content$ARL17, kansl1_fusion_content$LRRC37)
+
+
+```
+
+
+## Examine fractions of samples expressing each KANSL fusion type:
+
+
+`
+
+```{r}
+
+orig_STARF_fusion_preds = orig_STARF_fusion_preds %>% mutate(fusion_name = ifelse(grepl("KANSL1--ARL17", fusion_name),
+                                                                                  "KANSL1--ARL17",
+                                                                                  fusion_name))
+
+
+orig_STARF_fusion_preds = orig_STARF_fusion_preds %>% 
+    mutate(patient_name = str_replace(sample_name, "-TP", "")) %>%
+    mutate(patient_name = str_replace(patient_name, "-NT", ""))
+
+
+
+person_counts_per_tissue_type = orig_STARF_fusion_preds %>% 
+    select(tissue_type, data_class, patient_name) %>% 
+    unique() %>% 
+    group_by(tissue_type, data_class) %>% 
+    tally(name='person_counts')
+
+```
+
+
+```{r}
+
+examine_sample_fractions_with_fusion = function(input_fusion_name) {
+    
+    # get sample fusion counts
+    fusion_counts_per_tissue_type = orig_STARF_fusion_preds %>% 
+    filter(fusion_name == input_fusion_name) %>% 
+               select(tissue_type, data_class, patient_name) %>% 
+               unique() %>% 
+               group_by(tissue_type, data_class) %>% 
+        tally(name='have_fusion_counts')
+    
+
+    count_table = full_join(fusion_counts_per_tissue_type, person_counts_per_tissue_type)
+    
+    count_table = count_table %>% mutate(have_fusion_counts = ifelse(is.na(have_fusion_counts), 0, have_fusion_counts))
+
+    print(count_table)
+    
+   
+    
+    count_table = count_table %>% mutate(frac = have_fusion_counts/person_counts)
+    
+    message("median frac: ", median(count_table$frac))
+
+    p = count_table %>% ggplot(aes(x=person_counts, y=frac)) + 
+        geom_point(aes(color=data_class)) +       
+        geom_hline(yintercept=median(count_table$frac), color='red') +
+        ggtitle(input_fusion_name)
+    
+    plot(p)
+    
+}
+                       
+```
+
+
+```{r}
+
+examine_sample_fractions_with_fusion("KANSL1--ARL17")
+
+
+```
+
+
+
+```{r}
+
+orig_STARF_fusion_preds = orig_STARF_fusion_preds %>% mutate(fusion_name = ifelse(grepl("KANSL1--LRRC37", fusion_name),
+                                                                                  "KANSL1--LRRC37",
+                                                                                  fusion_name))
+
+
+```
+
+```{r}
+
+examine_sample_fractions_with_fusion("KANSL1--LRRC37")
+
+
+```
+
+
+```{r}
+
+examine_sample_fractions_with_fusion("TFG--GPR128")
+
+```
+
+Examine the supposed association of TMPRSS2--ERG fusions with KANSL1--ARL17
+
+```{r}
+
+PRAD_data = orig_STARF_fusion_preds %>% filter(tissue_type == "PRAD") 
+
+
+have_tmprss2_erg = PRAD_data %>%
+    filter(fusion_name == "TMPRSS2--ERG") %>% 
+    select(patient_name) %>% unique() %>%
+    mutate(tmprss2_erg = TRUE)
+
+have_kansl_arl17 = PRAD_data %>%
+    filter(fusion_name == "KANSL1--ARL17") %>% 
+    select(patient_name) %>% unique() %>%
+    mutate(kansl_arl17 = TRUE)
+
+all_prad_patients = orig_STARF_fusion_preds %>% filter(tissue_type == "PRAD") %>%
+    select(patient_name) %>% unique()
+
+compare_table = full_join(all_prad_patients, have_tmprss2_erg)
+compare_table = full_join(compare_table, have_kansl_arl17)
+
+compare_table = compare_table %>% 
+    mutate(tmprss2_erg = ifelse(is.na(tmprss2_erg), FALSE, tmprss2_erg)) %>%
+    mutate(kansl_arl17 = ifelse(is.na(kansl_arl17), FALSE, kansl_arl17))
+    
+  
+t = table(compare_table$kansl_arl17, compare_table$tmprss2_erg)
+
+t
+
+fisher.test(t, alternative = 'greater')
+
+```
+
+
+
+
+
