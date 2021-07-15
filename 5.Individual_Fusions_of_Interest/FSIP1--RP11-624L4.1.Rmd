@@ -1,0 +1,121 @@
+---
+title: "FSIP1--RP11-624L4.1"
+author: "Brian Haas"
+date: "2/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+
+orig_starF_preds = read.table("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz", header=T, sep="\t", stringsAsFactors=F)
+
+
+tumor_normal_stats = read.table("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz", 
+                                header=T, sep="\t", stringsAsFactors=F)
+
+tumor_normal_stats %>% filter(fusion_name == "FSIP1--RP11-624L4.1")
+```
+
+
+```{r}
+# count number of BRCA tumor samples:
+orig_starF_preds %>% filter(tumor_or_normal == "tumor" & tissue_type == "BRCA") %>% select(data_class, sample_name) %>% unique() %>% count()
+
+```
+
+
+
+```{r}
+fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.examine_recurrents.tsv.gz"), header=T, sep="\t", stringsAsFactors=F)
+
+fusion_data = fusion_data %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary)
+
+```
+
+```{r}
+
+fusion_data %>% gather(key=FAR_type, value=FAR_val, FAR_left, FAR_right) %>%
+    ggplot(aes(x=FAR_type, y=FAR_val)) + geom_boxplot() + facet_wrap(~fusion_name)
+
+```
+
+
+
+```{r}
+
+source("../Rlib/annotate_leiden_clusters.R")
+
+fusion_data = annotate_leiden_clusters(fusion_data)
+
+fusion_data = left_join(fusion_data, orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% select(sample_name, tumor_or_normal) %>% unique(), by='sample_name')
+
+fusion_data %>% group_by(data_class, tumor_or_normal, fusion_cluster_att) %>% tally()
+
+```
+
+
+
+Examine expression rankings.
+
+```{r}
+
+orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>%
+    ggplot(aes(x=reorder(sample_name, FFPM), y=FFPM, fill=tumor_or_normal)) + geom_col()
+
+```
+
+```{r}
+
+tumor_ffpms = orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>% filter(tumor_or_normal == "tumor") %>% pull(FFPM)
+
+normal_ffpms = orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>% filter(tumor_or_normal == "normal") %>% pull(FFPM)
+
+wilcox.test(tumor_ffpms, normal_ffpms, alternative = 'greater')
+
+```
+
+
+# Examine BRCA expression levels.
+
+```{r}
+
+expr_matrix = read.table(gzfile("__data/BRCA.FSIP1_and_RP11-624L4.1.expression.matrix.gz"), header=T, row.names = 1, check.names = F )
+
+expr_matrix_tidy = data.frame(t(expr_matrix))
+expr_matrix_tidy$sample_name = colnames(expr_matrix)
+
+expr_matrix_tidy = expr_matrix_tidy %>% mutate(tumor_or_normal = ifelse(grepl("-NT$", sample_name), "normal", "tumor"))
+
+
+samples_with_fusion = orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% select(sample_name) %>% unique() %>% pull(sample_name)
+
+expr_matrix_tidy = expr_matrix_tidy %>% mutate(has_fusion = (sample_name %in% samples_with_fusion))
+
+```
+
+```{r}
+
+expr_matrix_tidy %>% ggplot(aes(x=FSIP1, y=RP11.624L4.1)) + geom_point(alpha=0.5, aes(color=tumor_or_normal)) +
+    geom_smooth(method='lm', formula= y~x) +
+    geom_point(data=expr_matrix_tidy %>% filter(has_fusion), shape=5, color='black')
+
+
+```
+
+```{r}
+cor(expr_matrix_tidy$FSIP1, expr_matrix_tidy$RP11.624L4.1)
+
+```
+
+
+```{r}
+cor(expr_matrix_tidy$FSIP1, expr_matrix_tidy$GAPDH)
+
+```
+
+
