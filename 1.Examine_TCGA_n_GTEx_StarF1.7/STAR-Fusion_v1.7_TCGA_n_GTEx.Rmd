@@ -152,6 +152,17 @@ tcga_tissues_with_matched_normals = median_tissue_fusion_counts %>% filter(datac
 
 for (min_ffpm_use in min_ffpms) {
     
+  # statistical analysis of medians
+  tumor_normal_paired_medians = median_tissue_fusion_counts %>% 
+    filter(data_class == "TCGA" & tissue_type %in% tcga_tissues_with_matched_normals & min_ffpm == min_ffpm_use) %>%
+    arrange(tissue_type) %>% spread(key=dataclassTN, value=median_fusion_count)
+  
+   normal_medians = tumor_normal_paired_medians %>% select(`TCGA-normal`) %>% pull(`TCGA-normal`)
+   tumor_medians = tumor_normal_paired_medians %>% select(`TCGA-tumor`) %>% pull(`TCGA-tumor`)
+   t = t.test(tumor_medians, normal_medians, paired = T)
+   print(min_ffpm_use)
+   print(t)
+   
    p = median_tissue_fusion_counts %>% filter(data_class == "TCGA" & tissue_type %in% tcga_tissues_with_matched_normals) %>%
     filter(min_ffpm == min_ffpm_use) %>%
     ggplot(aes(x=tissue_type, y=median_fusion_count, fill=dataclassTN)) + geom_col(position='dodge') + 
@@ -230,6 +241,21 @@ message("GTEx ecdf at 0.1 ffpm: ", GTEx_normal_FFPM_ecdf(0.1))
 message("cosmic fusions ecdf at 0.1 ffpm: ", cosmic_fusion_FFPM_ecdf(0.1))
 
 ```
+
+```{r}
+
+num_gtex_ge = length(GTEx_normal_FFPM[GTEx_normal_FFPM >= 0.1])
+num_gtex_lt = length(GTEx_normal_FFPM[GTEx_normal_FFPM < 0.1])
+
+num_cosmic_ge = length(cosmic_fusion_FFPM[cosmic_fusion_FFPM >= 0.1])
+num_cosmic_lt = length(cosmic_fusion_FFPM[cosmic_fusion_FFPM < 0.1])
+
+m = matrix(c(num_gtex_ge, num_gtex_lt, num_cosmic_ge, num_cosmic_lt), nrow=2, byrow = T)
+fisher.test(m)
+
+
+```
+
 
 ## Examine the COSMIC fusions:
 
