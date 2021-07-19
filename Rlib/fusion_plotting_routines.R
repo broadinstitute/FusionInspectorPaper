@@ -1,4 +1,6 @@
-addSmallLegend <- function(myPlot, pointSize = 0.5, textSize = 3, spaceLegend = 0.1) {
+addSmallLegend <- function(myPlot, pointSize = 1.5, textSize = 5, spaceLegend = 0.3) {
+
+    # original settings: pointSize = 0.5, textSize = 3, spaceLegend = 0.1
 
     ## from: https://stackoverflow.com/questions/52297978/decrease-overal-legend-size-elements-and-text
 
@@ -18,7 +20,9 @@ plot_cosmic_like_cluster_fraction = function(fusion_list) {
         filter(fusion_name %in% fusion_list) %>%
         ggplot(aes(x=fusion_name, y=cluster_annot_type, fill=frac_fusions)) +
         geom_tile() +
-        theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
+        theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
+        ylab("Cluster Type") +
+        theme(axis.text.y = element_text(size=rel(0.7)))
 
     return(cosmic_cluster_like_fraction_plot)
 }
@@ -35,7 +39,9 @@ plot_frame_effect_fractions = function(fusion_list) {
         complete(PROT_FUSION_TYPE = c('INFRAME', 'INCL_NONCODING', 'FRAMESHIFT'), fill=list(n=0, frac=0.0))  %>%
         ggplot(aes(x=fusion_name, y=PROT_FUSION_TYPE, fill=frac)) +
         geom_tile() +
-        theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
+        theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
+        ylab("Coding Effect") +
+        theme(axis.text.y = element_text(size=rel(0.7)))
 
     return(frame_effect_fractions_plot)
 
@@ -49,7 +55,7 @@ plot_fusion_structure_types = function(fusion_list) {
        ggplot(aes(x=fusion_name, y=0, fill=structure_type)) + geom_tile() +
        theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank(),
           axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()
-       )
+          )
 
     return(fusion_structure_types_plot)
 
@@ -69,16 +75,16 @@ plot_tcga_sample_fractions = function(fusion_list) {
 
 
     ## ensure all ranked fusions are represented.
-    ranked_fusions_table = data.frame(fusion_name=fusion_list, dummy=T)
+    ranked_fusions_table = data.frame(fusion_name=factor(fusion_list, levels=fusion_list), dummy=T)
 
     tcga_type_fractions = full_join(tcga_type_fractions, ranked_fusions_table, by='fusion_name') %>%
         select(-dummy)
 
-
     tcga_type_fractions_plot = tcga_type_fractions %>%
         ggplot(aes(x=fusion_name, y=tissue_type, fill=tissue_fraction)) + geom_tile() +
         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
-        theme(axis.text.y = element_text(size=rel(0.2)))
+        theme(axis.text.y = element_text(size=rel(0.7))) +
+        ylab("TCGA")
 
     return(tcga_type_fractions_plot)
 
@@ -98,7 +104,7 @@ plot_gtex_sample_fractions = function(fusion_list) {
 
 
     ## ensure all ranked fusions are represented.
-    ranked_fusions_table = data.frame(fusion_name=fusion_list, dummy=T)
+    ranked_fusions_table = data.frame(fusion_name=factor(fusion_list, levels=fusion_list), dummy=T)
 
     gtex_type_fractions = full_join(gtex_type_fractions, ranked_fusions_table, by='fusion_name') %>%
         select(-dummy)
@@ -107,7 +113,8 @@ plot_gtex_sample_fractions = function(fusion_list) {
     gtex_type_fractions_plot = gtex_type_fractions %>% filter(fusion_name %in% fusion_list) %>%
         ggplot(aes(x=fusion_name, y=tissue_type, fill=tissue_fraction)) + geom_tile() +
        theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
-        theme(axis.text.y = element_text(size=rel(0.2)))
+        theme(axis.text.y = element_text(size=rel(0.7))) +
+        ylab("GTEx")
 
   return(gtex_type_fractions_plot)
 
@@ -208,7 +215,9 @@ plot_tumor_normal_logratio = function(fusion_list, remove_xlab=FALSE) {
     top_n_bottom_labels = c(break_labels, 0, break_labels)
     top_n_bottom_break_positions = c(break_positions, 0, -1*break_positions)
 
-    p = p + scale_y_continuous(breaks = top_n_bottom_break_positions, labels = top_n_bottom_labels)
+    p = p + scale_y_continuous(breaks = top_n_bottom_break_positions, labels = top_n_bottom_labels) +
+        theme(axis.text.y = element_text(size=rel(0.7))) +
+        ylab("log(#samples+1)")
 
 
 
@@ -232,25 +241,25 @@ plot_ranked_fusions = function(fusion_list, title="gimme a title", remove_xlab =
 
 
   cosmic_cluster_like_fraction_plot = plot_cosmic_like_cluster_fraction(fusion_list)
-  #plot(cosmic_cluster_like_fraction_plot)
+  plot(cosmic_cluster_like_fraction_plot)
 
 
   # reading frame fusion effect
   frame_effect_fractions_plot = plot_frame_effect_fractions(fusion_list)
-  #plot(frame_effect_fractions_plot)
+  plot(frame_effect_fractions_plot)
 
   # fusion structure annotations (ie. intra- vs inter- chromosomal, etc)
   fusion_structure_types_plot = plot_fusion_structure_types(fusion_list)
-  #plot(fusion_structure_types_plot)
+  plot(fusion_structure_types_plot)
 
   # tcga tissue type plot
   tcga_type_fractions_plot = plot_tcga_sample_fractions(fusion_list)
-  #plot(tcga_type_fractions_plot )
+  plot(tcga_type_fractions_plot )
 
   # gtex tissue type plot
 
   gtex_type_fractions_plot = plot_gtex_sample_fractions(fusion_list)
-  #plot(gtex_type_fractions_plot)
+  plot(gtex_type_fractions_plot)
 
   cosmic_indicator_plot = plot_IN_COSMIC_indicator(fusion_list)
 
@@ -259,7 +268,7 @@ plot_ranked_fusions = function(fusion_list, title="gimme a title", remove_xlab =
 
   # fusion T/N ranking plot
   p = plot_tumor_normal_logratio(fusion_list, remove_xlab)
-  #plot(p)
+  plot(p)
 
 
   # add small legends to each:
@@ -277,17 +286,18 @@ plot_ranked_fusions = function(fusion_list, title="gimme a title", remove_xlab =
   # grid plot
 
   pg = plot_grid(cosmic_cluster_like_fraction_plot,
-                  frame_effect_fractions_plot,
-                  fusion_structure_types_plot,
-                  tcga_type_fractions_plot,
-                  gtex_type_fractions_plot,
-                  cosmic_indicator_plot,
-                  signif_expr_indicator_plot,
-                  p,
-                  nrow=8,
-                  align='v',
-                  axis='lr',
-                  rel_heights = c(0.25, 0.2, 0.15, 0.3, 0.3, 0.15, 0.15, 1))
+                 frame_effect_fractions_plot,
+                 fusion_structure_types_plot,
+                 tcga_type_fractions_plot,
+                 gtex_type_fractions_plot,
+                 cosmic_indicator_plot,
+                 signif_expr_indicator_plot,
+                 p,
+                 nrow=8,
+                 align='v',
+                 axis='lr',
+                 rel_heights = c(0.10, 0.07, 0.03, 0.25, 0.25, 0.03, 0.03, 0.2)
+                 )
 
    return(pg)
 
@@ -317,9 +327,15 @@ batch_ranked_fusion_plots = function(fusion_list, num_show_per_plot=50, remove_x
         }
 
         png_filename = paste0(imgdir, "/fusions_ranked.", i, '-', j, ".plot.png")
-        ggsave(png_filename, pg, width=7, height=5)
+        ggsave(png_filename, pg, width=8, height=12)
+
+        pdf_filename = paste0(imgdir, "/fusions_ranked.", i, '-', j, ".plot.pdf")
+        ggsave(pdf_filename, pg, width=8, height=12)
+
+
      }
   }
 
 }
+
 
