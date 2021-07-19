@@ -298,6 +298,15 @@ cosmic_fusion_occurrence %>%
 ```
 
 
+when we find cosmic fusions in normal GTEx, at what fractions of samples?
+
+```{r}
+
+
+cosmic_fusion_occurrence %>% filter(grepl("GTEx", sample_tissue)) %>% arrange(desc(sample_pct))
+```
+
+
 
 Examine distribution of FFPM for cosmic fusions
 
@@ -394,6 +403,7 @@ dataclassTN_tissue_fusion_stats  %>% filter(fusion_name == "TMPRSS2--ERG")
 
 ```
 
+The PCPG entry above looks interesting but wasn't further validated by FusionInspector.
 
 
 
@@ -404,3 +414,12 @@ dataclassTN_tissue_fusion_stats  %>% filter(fusion_name == "FGFR3--TACC3") %>%
 
 
 ```
+
+
+```{r}
+
+
+
+```
+
+

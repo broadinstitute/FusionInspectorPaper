@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
 ```
 
 
@@ -21,7 +22,7 @@ orig_STARF_fusion_preds = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.
 fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.C4_targeted_fusions.tsv.gz"), header=T, 
                          sep="\t", stringsAsFactors = F)
 
-FI_samples = read.table("../data/FusionInspector.v2.4.0.C4_ =targeted_fusions.samples.list", header=F, stringsAsFactors = F)[,1]
+FI_samples = read.table("../data/FusionInspector.v2.4.0.C4_targeted_fusions.samples.list", header=F, stringsAsFactors = F)[,1]
 
 fusion_annot_class_stats = fusion_data %>% filter(is_primary) %>%
     mutate(annot_type = fusion_cluster_att) %>%
@@ -176,14 +177,6 @@ fusion_annot_class_stats %>% filter(fusion_name == "TMPRSS2--ERG")
 ```
 
 
-```{r}
-
-examine_sample_fractions_with_fusion("TMPRSS2--ERG")
-```
-
-
-
-
 ## FGFR3--TACC3
 
 ```{r}
@@ -222,11 +215,7 @@ starF_and_FI_FGFR3_TACC3_calls
 ```
 
 
-```{r}
 
-examine_sample_fractions_with_fusion("FGFR3--TACC3")
-
-```
 
 
 
@@ -271,6 +260,23 @@ examine_sample_fractions_with_fusion("VCL--ADK")
 
 
 ## PVT1--MYC
+
+```{r}
+orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1--MYC") %>% 
+    filter(is_primary) %>% 
+    group_by(data_class, tissue_type, tumor_or_normal) %>% 
+    tally() %>% 
+    arrange(desc(n)) 
+
+orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1--MYC") %>% 
+    filter(is_primary) %>% 
+    group_by(data_class, tumor_or_normal) %>% 
+    tally() %>% 
+    arrange(desc(n)) 
+
+```
+
+
 ```{r}
 
 fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% 
@@ -279,6 +285,11 @@ fusion_data %>% filter(fusion_name == "PVT1--MYC") %>%
     tally() %>% 
     arrange(desc(n)) 
 
+fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% 
+    filter(is_primary) %>% 
+    group_by(data_class, tumor_or_normal) %>% 
+    tally() %>% 
+    arrange(desc(n)) 
 
 ```
 ```{r}
@@ -310,18 +321,15 @@ starF_and_FI_PVT1_MYC_calls = compare_origSTARF_to_FI("PVT1--MYC")
 starF_and_FI_PVT1_MYC_calls
 
 ```
-
-
-
-
 ```{r}
-fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% 
-    filter(is_primary) %>% 
-    filter(FFPM >= 0.01) %>% 
-    group_by(tumor_or_normal) %>% tally()
 
+starF_and_FI_PVT1_MYC_calls %>% mutate(has_starF = ! is.na(FFPM.starF), has_FI = ! is.na(FFPM.FI)) %>% group_by(data_class, tumor_or_normal, has_starF, has_FI) %>% tally()
 
 ```
+
+]
+
+
 ```{r}
 
 pvt1_myc_normal_ffpms = fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% filter(is_primary) %>% filter(tumor_or_normal == "normal") %>% pull(FFPM)
@@ -330,11 +338,7 @@ pvt1_myc_tumor_ffpms = fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% fi
 
 wilcox.test(pvt1_myc_tumor_ffpms, pvt1_myc_normal_ffpms, alternative = 'greater')
 
-# but filter on expression first:
 
-pvt1_myc_normal_ffpms = pvt1_myc_normal_ffpms [pvt1_myc_normal_ffpms >= 0.01]
-pvt1_myc_tumor_ffpms = pvt1_myc_tumor_ffpms[pvt1_myc_tumor_ffpms >= 0.01]
-wilcox.test(pvt1_myc_tumor_ffpms, pvt1_myc_normal_ffpms, alternative = 'greater')
 
 ```
 
@@ -343,25 +347,26 @@ wilcox.test(pvt1_myc_tumor_ffpms, pvt1_myc_normal_ffpms, alternative = 'greater'
 # expr view from the latest FI data
 fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% 
     filter(is_primary) %>% 
-    filter(FFPM >= 0.01) %>%
     ggplot(aes(x=reorder(sample_name, FFPM), y=FFPM, fill=tumor_or_normal)) + 
     geom_col() + 
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 
 ```
-```{r}
-# expr view from the orig starF data:
 
-orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1--MYC") %>% 
-     filter(is_primary) %>% ggplot(aes(x=reorder(sample_name, FFPM), y=FFPM+1, fill=tumor_or_normal)) + 
-    geom_col() + 
-    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
-    scale_y_continuous(trans='log2')
-    
+```{r}
+
+fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% 
+    filter(is_primary) %>% arrange(FFPM) %>% select(sample_name, FFPM)
 
 
 ```
+
+
+
+
+
+PVT1--MYC is expressed more highly in CESC than the others.
 
 ```{r}
 
@@ -375,29 +380,10 @@ wilcox.test(pvt1_myc_tumor_ffpms, pvt1_myc_normal_ffpms, exact = F, alternative 
 ```
 
 
-
-```{r}
-examine_sample_fractions_with_fusion("PVT1--MYC")
-```
 Compare CESC expression to all other samples
 
-```{r}
-
-# using the orig starF data
-
-pvt1_myc_CESC_ffpms = orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1--MYC") %>% filter(is_primary) %>% filter(tissue_type == "CESC") %>% pull(FFPM)
-
-pvt1_myc_OTHER_ffpms = orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1--MYC") %>% filter(is_primary) %>% filter(tissue_type != "CESC") %>% pull(FFPM)
-
-wilcox.test(pvt1_myc_CESC_ffpms, pvt1_myc_OTHER_ffpms, exact = F, alternative = 'greater')
-
-
-```
-
 
 ```{r}
-# using the FI findings
-
 
 pvt1_myc_CESC_ffpms = fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% filter(is_primary) %>% filter(tissue_type == "CESC") %>% pull(FFPM)
 
