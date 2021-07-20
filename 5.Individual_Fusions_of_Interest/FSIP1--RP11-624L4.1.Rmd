@@ -64,9 +64,10 @@ Examine expression rankings.
 
 ```{r}
 
-orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>%
-    ggplot(aes(x=reorder(sample_name, FFPM), y=FFPM, fill=tumor_or_normal)) + geom_col()
+num_brca_samples = orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>% nrow()
 
+orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>%
+    ggplot(aes(x=reorder(sample_name, FFPM), y=FFPM, fill=tumor_or_normal)) + geom_col() + xlab(paste0(num_brca_samples, " BRCA samples ranked by FSIP1--RP11-624L4.1 FFPM")) + theme(axis.text.x=element_blank())
 ```
 
 ```{r}
