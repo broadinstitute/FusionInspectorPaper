@@ -406,7 +406,10 @@ plot_fusion_scaled_atts("SS18--SSX2")
 
 cosmic_fusions_in_C4 = fusion_data %>% filter(leiden == 4) %>% filter(cosmic) %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
 
-fusion_data %>% filter(fusion_name %in% cosmic_fusions_in_C4) %>% filter(leiden==4) %>% gather(key=FAR_type, value=FAR_val, FAR_left, FAR_right) %>%
+fusion_data %>% filter(fusion_name %in% cosmic_fusions_in_C4) %>% filter(leiden==4) %>% 
+  rename("5p-FAR" = FAR_left, "3p-FAR" = FAR_right ) %>%
+  gather(key=FAR_type, value=FAR_val, "5p-FAR", "3p-FAR") %>%
+  mutate(FAR_type=factor(FAR_type, levels=c("5p-FAR", "3p-FAR"))) %>%
   ggplot(aes(x=FAR_type, y=FAR_val)) + geom_boxplot() + facet_wrap(~fusion_name, scale='free_y')
 ```
 
