@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(extrafont)
 ```
 
 
@@ -210,9 +211,20 @@ TCGA_normal_FFPM = data2 %>% filter(dataclassTN == "TCGA-normal") %>% pull(FFPM)
 df_FFPM = bind_rows( data.frame(dataclass="Cosmic", FFPM=cosmic_fusion_FFPM),
                      data.frame(dataclass="GTEx-normal", FFPM=GTEx_normal_FFPM),
                      data.frame(dataclass="TCGA-tumor", FFPM=TCGA_tumor_FFPM),
-                     data.frame(dataclass="TCGA-normal", FFPM=TCGA_normal_FFPM) )
+                     data.frame(dataclass="TCGA-normal", FFPM=TCGA_normal_FFPM) ) 
+
+```
+
+```{r}
                      
-df_FFPM %>% mutate(FFPM_max1 = pmin(1, FFPM)) %>% ggplot(aes(x=FFPM_max1, color=dataclass)) + geom_density(alpha=0.2) + xlim(0, 1) + xlab("Density") + ylab("FFPM")
+p = df_FFPM %>% mutate(FFPM_max1 = pmin(1, FFPM)) %>% ggplot(aes(x=FFPM_max1, color=dataclass)) + geom_density(alpha=0.2) + xlim(0, 1) + xlab("Density") + ylab("FFPM") +
+  theme(legend.title = element_text(size = rel(0.7)),
+         legend.text  = element_text(size = rel(0.7)),
+         text=element_text(family="Times New Roman"))
+
+plot(p)
+
+ggsave("fuson_expr_density.svg", p, width=7.65, height=5.1)
 
 ```
 
@@ -231,8 +243,18 @@ df_ecdf = bind_rows( data.frame(dataclass="Cosmic", minFFPM=ecdf_range, cum_frac
                      data.frame(dataclass="TCGA-tumor", minFFPM=ecdf_range, cum_frac=TCGA_tumor_FFPM_ecdf(ecdf_range)),
                      data.frame(dataclass="TCGA-normal", minFFPM=ecdf_range, cum_frac=TCGA_normal_FFPM_ecdf(ecdf_range)) )
 
-df_ecdf %>% ggplot(aes(x=minFFPM, y=cum_frac, color=dataclass)) + geom_point() + 
-       xlab("Minimum FFPM") + ylab("Cumulative Fraction")
+
+```
+
+```{r}
+p = df_ecdf %>% ggplot(aes(x=minFFPM, y=cum_frac, color=dataclass)) + geom_point() + 
+       xlab("Minimum FFPM") + ylab("Cumulative Fraction") +
+   theme(legend.title = element_text(size = rel(0.7)),
+         legend.text  = element_text(size = rel(0.7)),
+         text=element_text(family="Times New Roman"))
+plot(p)
+
+ggsave("fuson_cumul_expr_frac.svg", p, width=7.65, height=5.1)
 
 ```
 
@@ -292,11 +314,22 @@ ranked_fusions = cosmic_fusion_occurrence %>%
     arrange(desc(sumpct)) %>% 
     select(fusion_name)
  
-cosmic_fusion_occurrence %>% 
+```
+
+```{r}
+
+p = cosmic_fusion_occurrence %>% 
     ggplot(aes(x=factor(fusion_name, levels=ranked_fusions$fusion_name), y=sample_pct, fill=sample_tissue)) + 
     geom_col() + 
-    theme(axis.text.x=element_text(angle = 90, hjust = 0, size=rel(0.5))) +
-    xlab("COSMIC Fusion") + ylab("% of Samples")
+    theme(axis.text.x=element_text(angle = 90, hjust = 0, size=rel(0.75))) +
+    xlab("COSMIC Fusion") + ylab("% of Samples") +
+   theme(legend.title = element_text(size = rel(0.7)),
+         legend.text  = element_text(size = rel(0.7)),
+         text=element_text(family="Times New Roman"))
+
+plot(p)
+
+ggsave("cosmic_pct_samples.svg", p, width=7.65, height=5.1)
 ```
 
 
@@ -315,13 +348,20 @@ Examine distribution of FFPM for cosmic fusions
 ```{r}
 
 
-data2 %>% filter(dataclass2 == "Cosmic") %>% 
+p = data2 %>% filter(dataclass2 == "Cosmic") %>% 
     ggplot(aes(x=reorder(fusion_name, FFPM, FUN = median), y=FFPM)) + 
     geom_boxplot() +
-     theme(axis.text.x=element_text(angle = 90, hjust = 0, size=rel(0.5))) + 
+     theme(axis.text.x=element_text(angle = 90, hjust = 0, size=rel(0.7))) + 
     scale_y_continuous(trans='log2') + 
     #ggtitle("Cosmic Fusion Expression Distribution") +
-    xlab("COSMIC Fusion")
+    xlab("COSMIC Fusion") +
+    theme(legend.title = element_text(size = rel(0.7)),
+         legend.text  = element_text(size = rel(0.7)),
+         text=element_text(family="Times New Roman"))
+
+plot(p)
+
+ggsave("cosmic_ffpm_dist.svg", p, width=7.65, height=5.1)
 
 ```
 
