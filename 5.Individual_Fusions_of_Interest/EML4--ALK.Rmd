@@ -1,0 +1,79 @@
+---
+title: "COL1A1--FN1.Rmd"
+author: "Brian Haas"
+date: "7/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+suppressPackageStartupMessages(library("argparse"))
+suppressPackageStartupMessages(library("tidyverse"))
+suppressPackageStartupMessages(library("cowplot"))
+```
+
+
+
+```{r}
+
+source("../Rlib/RT_artifact_funcs.R")
+
+fusion_preds_tsv = "__data/eml4--alk_data/fusions.tsv"
+microhomologies_tsv = "__data/eml4--alk_data/microH.dat"
+fusion_name = "EML4--ALK"
+```
+
+
+```{r}
+
+fusion_preds = read.table(fusion_preds_tsv, header=T, row.names=NULL, sep="\t", stringsAsFactors=F, com='')
+colnames(fusion_preds) = str_replace(colnames(fusion_preds), "^X\\.", "")
+
+
+if ('fusion_name' %in% colnames(fusion_preds) ) {
+    fusion_preds = fusion_preds %>% rename(FusionName = fusion_name)
+}
+
+if ('sample_name' %in% colnames(fusion_preds) ) {
+    fusion_preds = fusion_preds %>% rename(sample = sample_name)
+}
+
+## add splice type info for consenus vs. non-consensus dinucleotides
+
+fusion_preds = fusion_preds %>% mutate(SpliceDinuc=ifelse(LeftBreakDinuc %in% c("GT", "GC") & RightBreakDinuc == "AG", "Consensus", "Non"))
+
+grouped_fusion_preds = split(x=fusion_preds, f=fusion_preds$FusionName)
+fusion_names = names(grouped_fusion_preds)
+
+
+## parse microhomolgy data
+microhomologies = read.table(microhomologies_tsv, header=T, row.names=NULL, sep="\t", stringsAsFactors=F)
+grouped_microhomologies = split(x=microhomologies, f=microhomologies$contig)
+
+
+
+```
+
+```{r}
+fusion_preds_data = grouped_fusion_preds[[fusion_name]]
+fusion_pair_microhomologies = grouped_microhomologies[[fusion_name]]
+
+all_brkpt_plot_ffpm = breakpoint_plot(fusion_preds_data, fusion_pair_microhomologies,
+                                          title=paste0(fusion_name, " FFPM"), "FFPM")
+
+ggsave("EML4--ALK.microh-expr-brkpt.svg", all_brkpt_plot_ffpm, width=6.75, height=4.5, units = 'in')
+plot(all_brkpt_plot_ffpm)
+
+
+```
+```{r}
+all_brkpt_plot_num_samples = breakpoint_plot(fusion_preds_data, fusion_pair_microhomologies,
+                                                 title=paste0(fusion_name, " num samples"), "num_samples")
+
+plot(all_brkpt_plot_num_samples)
+
+```
+
+
+
+
