@@ -66,8 +66,12 @@ Examine expression rankings.
 
 num_brca_samples = orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>% nrow()
 
-orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>%
+p = orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>%
     ggplot(aes(x=reorder(sample_name, FFPM), y=FFPM, fill=tumor_or_normal)) + geom_col() + xlab(paste0(num_brca_samples, " BRCA samples ranked by FSIP1--RP11-624L4.1 FFPM")) + theme(axis.text.x=element_blank())
+
+plot(p)
+
+ggsave("FSIP1_fusions_FFPM_ranked.svg", p, width=6, height=4)
 ```
 
 ```{r}
@@ -101,9 +105,13 @@ expr_matrix_tidy = expr_matrix_tidy %>% mutate(has_fusion = (sample_name %in% sa
 
 ```{r}
 
-expr_matrix_tidy %>% ggplot(aes(x=FSIP1, y=RP11.624L4.1)) + geom_point(alpha=0.5, aes(color=tumor_or_normal)) +
+p = expr_matrix_tidy %>% ggplot(aes(x=FSIP1, y=RP11.624L4.1)) + geom_point(alpha=0.5, aes(color=tumor_or_normal)) +
     geom_smooth(method='lm', formula= y~x) +
     geom_point(data=expr_matrix_tidy %>% filter(has_fusion), shape=5, color='black')
+
+plot(p)
+
+ggsave("FISP1_RP11-expr_correlation.svg", p, width=6, height=4)
 
 
 ```
