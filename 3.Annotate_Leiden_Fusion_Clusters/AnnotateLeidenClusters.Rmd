@@ -42,7 +42,7 @@ plot(p)
 ```{r}
 
 p = fusion_data %>% ggplot(aes(x = umap1, y = umap2, colour = leiden)) + 
-        geom_point(alpha = 0.3) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) + 
         theme_bw() + 
         geom_label_repel(data=umap.layout.cent, aes(label = leiden)) + 
                              guides(colour = FALSE)
@@ -54,13 +54,15 @@ plot(p)
 
 
 
+
+
 ```{r}
 
 
 plot_umap = function() {
 
     p = fusion_data %>% ggplot(aes(x = umap1, y = umap2, colour = leiden)) + 
-        geom_point(alpha = 0.3) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) + 
         theme_bw() + 
         geom_label_repel(data=umap.layout.cent, aes(label = leiden)) + 
                              guides(colour = FALSE)
@@ -74,12 +76,21 @@ umap_plot = plot_umap()
 
 cosmic_subset = fusion_data %>% filter(cosmic & is_primary)
 
-p = umap_plot + geom_point(data=cosmic_subset, color='black')
+p = umap_plot + geom_point(data=cosmic_subset, color='black', size=rel(0.5))
 
 plot(p)
 
 
 ```
+
+
+```{r}
+
+ggsave("umap_res3.svg", p, width=9, height=6)
+
+
+```
+
 
 ```{r}
 # get median of scaled cluster attributes for heatmap
