@@ -1,0 +1,33 @@
+---
+title: "Select_FI_targeted_fusions"
+author: "Brian Haas"
+date: "7/28/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+
+fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.examine_recurrents.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+fusion_data$leiden = factor(fusion_data$leiden)
+
+fusion_data = fusion_data %>% filter(is_primary)
+
+fusions_in_C4 = fusion_data %>% filter(leiden == 4) %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
+
+cosmic_fusions = read.table("../data/cosmic.list", header=F, stringsAsFactors = F)[,1]
+
+orig_starF_fusion_stats = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz"), header=T, sep="\t", stringsAsFactors = F, check.names = F)
+
+orig_starF_fusion_stats = orig_starF_fusion_stats %>% filter(fusion_name %in% fusions_in_C4)
+
+```
+
+
+
+
