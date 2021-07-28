@@ -126,21 +126,71 @@ Jitter plots for counts of fusions per tissue type according to data class (ie. 
 ```{r}
 
 
-min_ffpms = median_tissue_fusion_counts %>% select(min_ffpm) %>% unique() %>% arrange(min_ffpm) %>% pull(min_ffpm)
+min_ffpms = median_tissue_fusion_counts %>% select(min_ffpm) %>% unique() %>% filter(min_ffpm >= 0.1) %>% arrange(min_ffpm) %>% pull(min_ffpm)
+
+median_count_stats = NULL
 
 for (min_ffpm_use in min_ffpms) {
     
+    print(paste0("Min FFPM: ", min_ffpm_use))
     
-    p = median_tissue_fusion_counts %>% filter(min_ffpm == min_ffpm_use) %>%
+    median_counts_min_ffpm  = median_tissue_fusion_counts %>% filter(min_ffpm == min_ffpm_use)
+    
+    p = median_counts_min_ffpm %>%
         ggplot(aes(x = dataclassTN, y=median_fusion_count)) + 
         geom_point(position = position_jitter(w = 0.1, h = 0)) +
         ggtitle(paste("median fusion counts/sample with min FFPM=", min_ffpm_use))
     
-       
+    
+    GTEx_normal_counts = median_counts_min_ffpm %>% filter(dataclassTN == "GTEx-normal") %>% pull(median_fusion_count)
+    
+    TCGA_normal_counts = median_counts_min_ffpm %>% filter(dataclassTN == "TCGA-normal") %>% pull(median_fusion_count)
+    
+    TCGA_tumor_counts = median_counts_min_ffpm %>% filter(dataclassTN == "TCGA-tumor") %>% pull(median_fusion_count)
+    
+    print("GTEx-normal vs. TCGA-normal")
+    t = t.test(GTEx_normal_counts, TCGA_normal_counts)
+    print(t)
+    median_count_stats = bind_rows(median_count_stats, data.frame(min_ffpm=min_ffpm_use, comparison = "GTEx-normal vs. TCGA-normal", tp_value = t$p.value))
+    
+    print("GTEx-normal vs. TCGA-tumor")
+    t = t.test(GTEx_normal_counts, TCGA_tumor_counts)
+    print(t)
+    median_count_stats = bind_rows(median_count_stats, data.frame(min_ffpm=min_ffpm_use, comparison = "GTEx-normal vs. TCGA-tumor", tp_value = t$p.value ))
+    
+    print("TCGA-normal vs. TCGA-tumor")
+    t = t.test(TCGA_normal_counts, TCGA_tumor_counts)
+    print(t)
+    median_count_stats = bind_rows(median_count_stats, data.frame(min_ffpm=min_ffpm_use, comparison = "TCGA-normal vs. TCGA-tumor", tp_value = t$p.value  ))
+    
     plot(p)
     
 }
 ```
+
+
+```{r}
+
+median_count_stats = median_count_stats %>% mutate(tnegLogP = -1 * log(tp_value))
+median_count_stats %>% ggplot(aes(x=min_ffpm, y=tnegLogP, color=comparison)) + geom_point() + geom_line() + ggtitle("t-test -Log(p)")
+
+
+```
+
+```{r}
+
+median_tissue_fusion_counts %>% filter(min_ffpm == 0.1) %>% group_by(dataclassTN) %>% summarize(median(median_fusion_count))
+
+```
+
+```{r}
+
+median_tissue_fusion_counts %>% filter(min_ffpm == 0.1) %>% filter(tissue_type == "Pancreas")
+
+```
+
+
+
 
 
 Plot TCGA tumor/normal median fusion counts according to matched sample types.
@@ -163,16 +213,107 @@ for (min_ffpm_use in min_ffpms) {
    t = t.test(tumor_medians, normal_medians, paired = T)
    print(min_ffpm_use)
    print(t)
+  
    
    p = median_tissue_fusion_counts %>% filter(data_class == "TCGA" & tissue_type %in% tcga_tissues_with_matched_normals) %>%
-    filter(min_ffpm == min_ffpm_use) %>%
-    ggplot(aes(x=tissue_type, y=median_fusion_count, fill=dataclassTN)) + geom_col(position='dodge') + 
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) +
-       ggtitle(paste("Median TCGA fusion counts at min FFPM threshold: ", min_ffpm_use))
+     filter(min_ffpm == min_ffpm_use) %>%
+     ggplot(aes(x=tissue_type, y=median_fusion_count, fill=dataclassTN)) + geom_col(position='dodge') + 
+     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) +
+     ggtitle(paste("Median TCGA fusion counts at min FFPM threshold: ", min_ffpm_use))
+   
+   
+   
+       
+   plot(p)
+   
+}
+
+```
+
+
+
+```{r}
+
+source("../Rlib/geom_split_violin.R")
+
+tcga_sample_info = data %>% filter(data_class == "TCGA") %>% select(tissue_type, sample_name) %>% unique()
+tcga_sample_info$patient = str_replace(tcga_sample_info$sample_name, "-(NT|TP)$", "")
+patients_with_both_tumor_normal_samples = tcga_sample_info %>% group_by(patient) %>% tally() %>% filter(n>1) %>% pull(patient)
+
+tissue_fusion_counts_vs_min_ffpm$patient = str_replace(tissue_fusion_counts_vs_min_ffpm$sample_name, "-(NT|TP)$", "")
+
+tumor_normal_compare_pvalues = NULL
+
+for (min_ffpm_use in min_ffpms) {
+    
+  # statistical analysis of paired counts
+  tumor_normal_paired_fusion_counts = tissue_fusion_counts_vs_min_ffpm %>% 
+    filter(patient %in% patients_with_both_tumor_normal_samples) %>%
+    filter(data_class == "TCGA" & tissue_type %in% tcga_tissues_with_matched_normals & min_ffpm == min_ffpm_use) %>%
+    select(data_class, dataclassTN, patient, tissue_type, fusion_count) %>%
+    arrange(tissue_type) 
+
+  
+   tissue_types = tumor_normal_paired_fusion_counts %>% select(tissue_type) %>% unique() %>% pull(tissue_type)
+   
+  
+   paired_data = NULL
+   
+   for (tissue_type_selected in tissue_types) {
+     
+     paired_samples = tumor_normal_paired_fusion_counts %>% filter(tissue_type == tissue_type_selected) %>% spread(key=dataclassTN, value=fusion_count, fill=0)  
+     
+     
+     normal_counts = paired_samples %>% pull(`TCGA-normal`)
+     tumor_counts = paired_samples %>% pull(`TCGA-tumor`)
+     t = t.test(normal_counts, tumor_counts, paired = T)
+     tumor_normal_compare_pvalues = bind_rows(tumor_normal_compare_pvalues,
+                                              data.frame(tissue_type=tissue_type_selected, 
+                                                         min_ffpm = min_ffpm_use, tp_value=t$p.value))
+
+     paired_data = bind_rows(paired_data,
+                             data.frame(tissue_type=tissue_type_selected, type='normal', counts=normal_counts),
+                             data.frame(tissue_type=tissue_type_selected, type='tumor', counts=tumor_counts))
+     
+   }
+   
+   p = paired_data %>%
+     ggplot(aes(x=tissue_type, y=counts, fill=type)) + geom_split_violin(scale='width') + 
+     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) +
+     ggtitle(paste("TCGA fusion T/N paired counts at min FFPM threshold: ", min_ffpm_use))  + geom_jitter(size=rel(0.1))
+   #+ ylim(0,50)
    
    plot(p)
    
 }
+
+
+
+```
+
+```{r}
+
+# correct p-values for mult tests
+tumor_normal_compare_pvalues$tp_pval_BH = p.adjust(tumor_normal_compare_pvalues$tp_value, method="BH")
+
+tumor_normal_compare_pvalues  = tumor_normal_compare_pvalues %>% 
+  mutate(signif = tp_pval_BH < 0.05) %>%
+  mutate(pt_negLogPval = -1 * log10(tp_pval_BH)) 
+
+p = tumor_normal_compare_pvalues %>% 
+  ggplot(aes(x=tissue_type, y=pt_negLogPval, fill=signif)) + facet_wrap(~min_ffpm) + 
+  geom_col() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1)))
+
+plot(p)
+
+```
+
+
+```{r}
+
+tumor_normal_compare_pvalues %>% filter(signif) %>% group_by(min_ffpm) %>% tally() %>%
+  ggplot(aes(x=min_ffpm, y=n)) + geom_point() + geom_line()
 
 ```
 
