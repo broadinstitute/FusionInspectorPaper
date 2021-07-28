@@ -24,10 +24,50 @@ cosmic_fusions = read.table("../data/cosmic.list", header=F, stringsAsFactors = 
 
 orig_starF_fusion_stats = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz"), header=T, sep="\t", stringsAsFactors = F, check.names = F)
 
-orig_starF_fusion_stats = orig_starF_fusion_stats %>% filter(fusion_name %in% fusions_in_C4)
+
+
+```
+
+
+```{r}
+COSMIC_LIKE_CLUSTERS = c(4, 6, 39, 38, 23, 8, 54, 13, 45, 46, 34, 21, 7,  26, 10, 12, 3, 18) # min 2 cosmic fusions in a cluster
+
+cosmic_like_cluster_fraction = fusion_data %>% 
+    mutate(in_cosmic_like = ifelse(leiden %in% COSMIC_LIKE_CLUSTERS, "in_cosmic_like_cluster", "out_cosmic_like_cluster")) %>% 
+    select(fusion_name, in_cosmic_like) %>% 
+    group_by(fusion_name, in_cosmic_like) %>% 
+    tally(name='fusion_count') %>%
+    spread(key=in_cosmic_like, value=fusion_count, fill=0) %>%
+    mutate(frac_in_cosmic_like_cluster = in_cosmic_like_cluster / (in_cosmic_like_cluster + out_cosmic_like_cluster)) 
+
+orig_starF_fusion_stats = left_join(orig_starF_fusion_stats, cosmic_like_cluster_fraction, by='fusion_name')
 
 ```
 
 
 
+```{r}
+fusions_min_3_samples = orig_starF_fusion_stats %>% filter(total >= 3 & frac_in_cosmic_like_cluster >= 0.3) %>% pull(fusion_name)
+ 
+ fusions_in_C4_min_3_samples = data.frame(fusion_name=fusions_in_C4) %>% filter(fusion_name %in% fusions_min_3_samples | fusion_name %in% cosmic_fusions)
+ 
+ fusions_in_C4_min_3_samples
 
+```
+
+
+```{r}
+extra_cosmic_fusions = fusion_data %>% filter( fusion_name %in% cosmic_fusions) %>% filter( ! fusion_name %in% fusions_in_C4_min_3_samples$fusion_name )  %>% select(fusion_name) %>% unique()
+
+extra_cosmic_fusions
+
+```
+
+
+
+```{r}
+selected_fusions = bind_rows(fusions_in_C4_min_3_samples, extra_cosmic_fusions) %>% arrange(fusion_name)
+ 
+write.table(selected_fusions, file='selected_fusions.txt', row.names = F, quote=F, col.names = F)
+
+```
