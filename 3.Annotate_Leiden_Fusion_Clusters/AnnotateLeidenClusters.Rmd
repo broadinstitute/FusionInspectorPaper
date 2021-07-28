@@ -415,16 +415,66 @@ plot_fusion_scaled_atts("SS18--SSX2")
 
 ```{r}
 
-cosmic_fusions_in_C4 = fusion_data %>% filter(leiden == 4) %>% filter(cosmic) %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
+cosmic_fusions_in_C4 = fusion_data %>% filter(leiden == 4 & is_primary & cosmic) %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
 
-fusion_data %>% filter(fusion_name %in% cosmic_fusions_in_C4) %>% filter(leiden==4) %>% 
+cosmic_FAR_data = fusion_data %>% filter(fusion_name %in% cosmic_fusions_in_C4) %>% filter(leiden==4 & is_primary) %>% 
   rename("5p-FAR" = FAR_left, "3p-FAR" = FAR_right ) %>%
   gather(key=FAR_type, value=FAR_val, "5p-FAR", "3p-FAR") %>%
-  mutate(FAR_type=factor(FAR_type, levels=c("5p-FAR", "3p-FAR"))) %>%
+  mutate(FAR_type=factor(FAR_type, levels=c("5p-FAR", "3p-FAR"))) 
+
+cosmic_FAR_data %>%
   ggplot(aes(x=FAR_type, y=FAR_val)) + geom_boxplot() + facet_wrap(~fusion_name, scale='free_y')
 ```
 
+```{r}
 
+cosmic_FAR_data %>%
+  ggplot(aes(x=FAR_type, y=FAR_val, fill=FAR_type)) + 
+  geom_violin(scale='width') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) + 
+  facet_wrap(~fusion_name, scale='free_y') +  
+  geom_jitter(size=rel(0.1)) +
+  theme(strip.text.x = element_text(size = rel(0.8)))
+
+```
+
+
+```{r}
+
+cosmic_paired_FAR_data = cosmic_FAR_data %>% select(sample_name, fusion_name, FAR_type, FAR_val) %>% spread(key=FAR_type, value=FAR_val)
+
+cosmic_fusions_here = cosmic_paired_FAR_data %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
+
+cosmic_FAR_ttest_pvals = NULL
+
+for (cosmic_fusion_select in cosmic_fusions_here) {
+  
+  paired_FAR_data = cosmic_paired_FAR_data %>% filter(fusion_name == cosmic_fusion_select)
+  
+  left_FAR_vals = paired_FAR_data %>% pull(`5p-FAR`)
+  right_FAR_vals = paired_FAR_data %>% pull(`3p-FAR`)
+  
+  if (length(left_FAR_vals) > 1) {
+    t = t.test(left_FAR_vals, right_FAR_vals, alternative = 'less', paired = T)
+    cosmic_FAR_ttest_pvals = bind_rows(cosmic_FAR_ttest_pvals, data.frame(fusion=cosmic_fusion_select, tp_val = t$p.value))
+  }
+}
+
+
+```
+
+```{r}
+
+cosmic_FAR_ttest_pvals$tp_val_BH = p.adjust(cosmic_FAR_ttest_pvals$tp_val, method = 'BH')
+
+cosmic_FAR_ttest_pvals = cosmic_FAR_ttest_pvals %>% mutate(signif = tp_val_BH < 0.05)
+
+
+cosmic_FAR_ttest_pvals %>% mutate(negLogP = -1*log10(tp_val_BH)) %>%
+  ggplot(aes(x=fusion, y=negLogP, fill=signif)) + geom_col() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) 
+
+```
 
 
 
