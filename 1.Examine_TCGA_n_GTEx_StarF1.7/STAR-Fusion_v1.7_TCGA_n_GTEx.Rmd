@@ -266,7 +266,7 @@ for (min_ffpm_use in min_ffpms) {
      
      normal_counts = paired_samples %>% pull(`TCGA-normal`)
      tumor_counts = paired_samples %>% pull(`TCGA-tumor`)
-     t = t.test(normal_counts, tumor_counts, paired = T)
+     t = t.test(normal_counts, tumor_counts, paired = T, alternative = 'less')
      tumor_normal_compare_pvalues = bind_rows(tumor_normal_compare_pvalues,
                                               data.frame(tissue_type=tissue_type_selected, 
                                                          min_ffpm = min_ffpm_use, tp_value=t$p.value))
