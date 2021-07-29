@@ -46,7 +46,7 @@ data %>% select(dataclassTN, sample_name) %>% unique() %>% ungroup() %>% group_b
 
 ```{r}
 
-get_FPM_vs_min_FFPM_via_tissue_type = function (data, min_ffpm_vals = seq(0, 0.3, 0.05)) {
+get_FPM_vs_min_FFPM_via_tissue_type = function (data, min_ffpm_vals = seq(0, 0.3, 0.025)) {
     
     fusion_counts_vs_min_ffpm = NULL
     
@@ -126,7 +126,7 @@ Jitter plots for counts of fusions per tissue type according to data class (ie. 
 ```{r}
 
 
-min_ffpms = median_tissue_fusion_counts %>% select(min_ffpm) %>% unique() %>% filter(min_ffpm >= 0.1) %>% arrange(min_ffpm) %>% pull(min_ffpm)
+min_ffpms = median_tissue_fusion_counts %>% select(min_ffpm) %>% unique() %>% arrange(min_ffpm) %>% pull(min_ffpm)
 
 median_count_stats = NULL
 
@@ -174,6 +174,7 @@ for (min_ffpm_use in min_ffpms) {
 median_count_stats = median_count_stats %>% mutate(tnegLogP = -1 * log(tp_value))
 median_count_stats %>% ggplot(aes(x=min_ffpm, y=tnegLogP, color=comparison)) + geom_point() + geom_line() + ggtitle("t-test -Log(p)")
 
+median_count_stats 
 
 ```
 
@@ -266,15 +267,18 @@ for (min_ffpm_use in min_ffpms) {
      
      normal_counts = paired_samples %>% pull(`TCGA-normal`)
      tumor_counts = paired_samples %>% pull(`TCGA-tumor`)
-     t = t.test(normal_counts, tumor_counts, paired = T, alternative = 'less')
-     tumor_normal_compare_pvalues = bind_rows(tumor_normal_compare_pvalues,
-                                              data.frame(tissue_type=tissue_type_selected, 
-                                                         min_ffpm = min_ffpm_use, tp_value=t$p.value))
-
-     paired_data = bind_rows(paired_data,
-                             data.frame(tissue_type=tissue_type_selected, type='normal', counts=normal_counts),
-                             data.frame(tissue_type=tissue_type_selected, type='tumor', counts=tumor_counts))
      
+     try( {
+       
+       t = t.test(normal_counts, tumor_counts, paired = T, alternative = 'less')
+       tumor_normal_compare_pvalues = bind_rows(tumor_normal_compare_pvalues,
+                                                data.frame(tissue_type=tissue_type_selected, 
+                                                           min_ffpm = min_ffpm_use, tp_value=t$p.value))
+       
+       paired_data = bind_rows(paired_data,
+                               data.frame(tissue_type=tissue_type_selected, type='normal', counts=normal_counts),
+                               data.frame(tissue_type=tissue_type_selected, type='tumor', counts=tumor_counts))
+     }) 
    }
    
    p = paired_data %>%
