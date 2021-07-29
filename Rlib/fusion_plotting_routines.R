@@ -14,7 +14,7 @@ addSmallLegend <- function(myPlot, pointSize = 0.5, textSize = 3, spaceLegend = 
 
 plot_cosmic_like_cluster_fraction = function(fusion_list) {
 
-    cosmic_cluster_like_fraction_plot = fusion_annot_class_stats %>%
+    cosmic_cluster_like_fraction_plot = fusion_annot_class_stats_gathered %>%
         filter(fusion_name %in% fusion_list) %>%
         ggplot(aes(x=fusion_name, y=cluster_annot_type, fill=frac_fusions)) +
         geom_tile() +
@@ -69,7 +69,7 @@ plot_tcga_sample_fractions = function(fusion_list) {
 
 
     ## ensure all ranked fusions are represented.
-    ranked_fusions_table = data.frame(fusion_name=fusion_list, dummy=T)
+    ranked_fusions_table = data.frame(fusion_name=factor(fusion_list, levels=fusion_list), dummy=T)
 
     tcga_type_fractions = full_join(tcga_type_fractions, ranked_fusions_table, by='fusion_name') %>%
         select(-dummy)
@@ -98,7 +98,7 @@ plot_gtex_sample_fractions = function(fusion_list) {
 
 
     ## ensure all ranked fusions are represented.
-    ranked_fusions_table = data.frame(fusion_name=fusion_list, dummy=T)
+    ranked_fusions_table = data.frame(fusion_name=factor(fusion_list, levels=fusion_list), dummy=T)
 
     gtex_type_fractions = full_join(gtex_type_fractions, ranked_fusions_table, by='fusion_name') %>%
         select(-dummy)

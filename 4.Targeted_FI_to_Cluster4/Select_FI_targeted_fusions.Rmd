@@ -71,3 +71,16 @@ selected_fusions = bind_rows(fusions_in_C4_min_3_samples, extra_cosmic_fusions) 
 write.table(selected_fusions, file='selected_fusions.txt', row.names = F, quote=F, col.names = F)
 
 ```
+
+
+
+```{r}
+
+#How many of the original 231 included cosmic fusions?
+ 
+fusions_in_C4_min_3_samples %>% filter(fusion_name %in% cosmic_fusions)   
+
+```
+
+
+    
