@@ -16,7 +16,7 @@ addSmallLegend <- function(myPlot, pointSize = 1.5, textSize = 5, spaceLegend = 
 
 plot_cosmic_like_cluster_fraction = function(fusion_list) {
 
-    cosmic_cluster_like_fraction_plot = fusion_annot_class_stats %>%
+    cosmic_cluster_like_fraction_plot = fusion_annot_class_stats_gathered %>%
         filter(fusion_name %in% fusion_list) %>%
         ggplot(aes(x=fusion_name, y=cluster_annot_type, fill=frac_fusions)) +
         geom_tile() +

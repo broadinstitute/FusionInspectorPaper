@@ -50,6 +50,8 @@ fusion_fraction_C4 = fusion_data %>%
 fusion_annot_class_stats = left_join(fusion_annot_class_stats, fusion_fraction_C4, by='fusion_name')
 
 fusion_annot_class_stats
+
+write.table(fusion_annot_class_stats, file="fusion_annot_class_stats.tsv", quote=F, sep="\t", row.names = F)
 ```
 
 ```{r}
@@ -84,6 +86,8 @@ orig_STARF_tumor_normal_stats$fusion_name = factor(orig_STARF_tumor_normal_stats
 
 fusion_annot_class_stats$fusion_name = factor(fusion_annot_class_stats$fusion_name, levels=fusions_ranked_by_logTN)
 
+
+write.table(orig_STARF_tumor_normal_stats, "fusions_236_logTN_stats.tsv", quote=F, sep="\t", row.names = F)
 ```
 
 
@@ -105,6 +109,10 @@ fusion_annot_class_stats %>%
 
 ```{r}
 
+
+
+
+
 source("../Rlib/fusion_plotting_routines.R")
 
 plot_ranked_fusions(fusions_ranked_by_logTN)
@@ -112,10 +120,60 @@ plot_ranked_fusions(fusions_ranked_by_logTN)
 ```
 
 
+
+
 ```{r}
 
 batch_ranked_fusion_plots(fusions_ranked_by_logTN)
 
 ```
+
+
+# querying aspects of the data
+
+```{r}
+
+# How many of these fusions are found at substantial levels in normal tissues?
+
+orig_STARF_tumor_normal_stats %>% arrange(desc(logTN)) %>% filter(logTN<=0 | abs(normal) >= 10) %>% nrow()
+
+```
+
+
+
+```{r}
+
+
+fusion_list = fusions_ranked_by_logTN
+
+
+tcga_type_fractions = orig_STARF_fusion_preds %>% filter(fusion_name %in% fusion_list) %>%
+        filter(data_class == "TCGA" & tumor_or_normal == "tumor") %>%
+        filter(is_primary) %>%
+        group_by(fusion_name, tissue_type) %>%
+        tally(name='tissue_count') %>%
+        group_by(fusion_name) %>%
+        mutate(tissue_fraction = tissue_count / sum(tissue_count)) %>% select(-tissue_count)
+
+
+
+
+```
+
+
+```{r}
+
+gtex_type_fractions = orig_STARF_fusion_preds %>% filter(fusion_name %in% fusion_list) %>%
+        filter(data_class == "GTEx") %>%
+        filter(is_primary) %>%
+        group_by(fusion_name, tissue_type) %>%
+        tally(name='tissue_count') %>%
+        group_by(fusion_name) %>%
+        mutate(tissue_fraction = tissue_count / sum(tissue_count)) %>%
+        select(-tissue_count)
+
+```
+
+
 
 
