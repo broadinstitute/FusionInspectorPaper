@@ -1,7 +1,5 @@
 ---
 title: "Tumor_vs_Normal_Fusion_Expression"
-author: "Brian Haas"
-date: "2/11/2021"
 output: html_document
 ---
 
@@ -12,6 +10,10 @@ library(tidyverse)
 library(cowplot)
 ```
 
+
+Fusions are examined for differences in expression in tumor samples vs. normal samples using fusion FFPM values
+
+
 ```{r}
 # pull in the original STAR-Fusion results for T/N findings and other annotated fusion attributes.
 
@@ -19,12 +21,6 @@ orig_STARF_fusion_preds = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.
 
 orig_STARF_tumor_normal_stats = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
-
-```
-
-
-
-```{r}
 
 fusions_to_test_expr_ranking = orig_STARF_tumor_normal_stats %>% filter(tumor > 3 & normal > 3) %>% pull(fusion_name)
 
@@ -55,9 +51,6 @@ for (fusion in fusions_to_test_expr_ranking) {
   
 }
 
-```
-
-```{r}
 
 write.table(pvals, file="TCGA_n_GTEx.STAR-Fusion.v1.7.tumor_normal_fusion_expression_comparison_stats.tsv", 
             quote=F, sep="\t", row.names = F)
