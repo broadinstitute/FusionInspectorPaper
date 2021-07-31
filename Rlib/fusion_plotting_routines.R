@@ -179,27 +179,13 @@ plot_tumor_normal_logratio = function(fusion_list, remove_xlab=FALSE) {
     max_sample_count = max(data_to_plot_selected$log_sample_count)
     min_sample_count = min(data_to_plot_selected$log_sample_count)
 
-    #message("max sample count: ", max_sample_count, ", min sample count: " , min_sample_count)
-
-
-    #alpha = 0.5 * max(max_sample_count, abs(min_sample_count)) / max_logTN
-    #message("alpha: ", alpha)
-
-    logTN_scale_factor = 0.5
-
 
     ## plot Tumor / Normal sample counts.
     p = data_to_plot_selected %>%
         ggplot(aes(x=fusion_name, y=log_sample_count, fill=tumor_or_normal)) + geom_col()
 
     ## plot logTN
-    #p = p + geom_col(data=data_to_plot_selected, aes(y=logTN*alpha), fill='gray', alpha=0.5)
     p = p + geom_col(data=data_to_plot_selected, aes(y=logTN), fill='gray', alpha=0.5)
-
-    ## add logTN second axis
-    #p = p + scale_y_continuous(
-    #            sec.axis = sec_axis(~ . / alpha, name = "log2(T/N)")
-    #        )
 
     ## custom y axis
     break_labels = (c(1, 10, 100, 1000, 5000))

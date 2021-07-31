@@ -95,13 +95,13 @@ write.table(orig_STARF_tumor_normal_stats, "fusions_236_logTN_stats.tsv", quote=
 
 ```{r}
 
-fusion_annot_class_stats = fusion_annot_class_stats %>%
+fusion_annot_class_stats_gathered = fusion_annot_class_stats %>%
     gather(key=cluster_annot_type, value=frac_fusions, artifact, `cosmic-like`, high_counter_evidence, other, frac_in_C4)
 ```
 
 
 ```{r}
-fusion_annot_class_stats %>%
+fusion_annot_class_stats_gathered %>%
     ggplot(aes(x=fusion_name, y=frac_fusions)) + geom_col(aes(fill=cosmic)) +
     facet_wrap(~cluster_annot_type, ncol = 1) + 
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size=rel(0.3) ))
@@ -156,8 +156,11 @@ tcga_type_fractions = orig_STARF_fusion_preds %>% filter(fusion_name %in% fusion
         mutate(tissue_fraction = tissue_count / sum(tissue_count)) %>% select(-tissue_count)
 
 
+head(tcga_type_fractions)
 
+fusion_to_tcga_tumor_type_count = tcga_type_fractions %>% group_by(fusion_name) %>% tally(name='tcga_tumor_type_count')
 
+head(fusion_to_tcga_tumor_type_count)
 ```
 
 
@@ -172,8 +175,38 @@ gtex_type_fractions = orig_STARF_fusion_preds %>% filter(fusion_name %in% fusion
         mutate(tissue_fraction = tissue_count / sum(tissue_count)) %>%
         select(-tissue_count)
 
+head(gtex_type_fractions)
+
+fusion_to_gtex_normal_type_count = gtex_type_fractions %>% group_by(fusion_name) %>% tally(name='gtex_normal_type_count')
+head(fusion_to_gtex_normal_type_count)
+
+```
+
+```{r}
+
+fusion_to_tcga_gtex_tissue_type_counts = full_join(fusion_to_tcga_tumor_type_count, fusion_to_gtex_normal_type_count, by='fusion_name')
+
+fusion_annot_class_stats_ext1 = full_join(fusion_annot_class_stats, fusion_to_tcga_gtex_tissue_type_counts, by='fusion_name')
+
+fusion_annot_class_stats_ext2 = full_join(fusion_annot_class_stats_ext1,
+                                          orig_STARF_fusion_preds %>% select(fusion_name, structure_type) %>% 
+                                          unique() %>% 
+                                          filter(fusion_name %in%  fusion_annot_class_stats_ext1$fusion_name),
+                                        by='fusion_name')
+
+fusion_annot_class_stats_ext3 = full_join(fusion_annot_class_stats_ext2, 
+                                          orig_STARF_tumor_normal_stats %>% select(fusion_name, normal, tumor, total, logTN),
+                                          by='fusion_name')
 ```
 
 
+```{r}
 
+fusions_in_mult_normals_n_tissues = fusion_annot_class_stats_ext3 %>% filter(normal >= 5  & gtex_normal_type_count >= 5)
+
+fusions_in_mult_normals_n_tissues 
+
+fusions_in_mult_normals_n_tissues  %>% group_by(structure_type) %>% tally()
+
+```
 
