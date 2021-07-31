@@ -1,7 +1,5 @@
 ---
 title: "AnnotateLeidenClusters"
-author: "Brian Haas"
-date: "2/10/2021"
 output: html_document
 ---
 
@@ -12,6 +10,9 @@ library(cowplot)
 library(ggrepel)
 ```
 
+Below we examine the contents of fusion clusters including COSMIC enrichment and properties of those COSMIC fusions found in COSMIC-enriched cluster C4.
+
+- used for Figure 4
 
 
 ```{r}
@@ -21,42 +22,6 @@ fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.examine_recurren
 fusion_data$leiden = factor(fusion_data$leiden)
 
 umap.layout.cent = fusion_data %>% select(umap1, umap2, leiden) %>% group_by(leiden) %>% summarize_all(mean)
-
-
-```
-
-
-
-```{r}
-
-p = fusion_data %>% ggplot(aes(x = umap1, y = umap2)) + 
-        geom_point(alpha = 0.3) + 
-        theme_bw() + 
-        guides(colour = FALSE)
-
-plot(p)
-
-```
-
-
-```{r}
-
-p = fusion_data %>% ggplot(aes(x = umap1, y = umap2, colour = leiden)) + 
-        geom_point(alpha = 0.3, size=rel(0.5)) + 
-        theme_bw() + 
-        geom_label_repel(data=umap.layout.cent, aes(label = leiden)) + 
-                             guides(colour = FALSE)
-
-
-plot(p)
-
-```
-
-
-
-
-
-```{r}
 
 
 plot_umap = function() {
@@ -80,17 +45,11 @@ p = umap_plot + geom_point(data=cosmic_subset, color='black', size=rel(0.5))
 
 plot(p)
 
-
-```
-
-
-```{r}
-
 ggsave("umap_res3.svg", p, width=9, height=6)
 
-
 ```
 
+Generate heatmap of median cluster attributes
 
 ```{r}
 # get median of scaled cluster attributes for heatmap
@@ -359,13 +318,6 @@ fusion_data = annotate_leiden_clusters(fusion_data)
 ```{r}
 # General statistics on cluster annotation types.
 
-# start with all fusions
-fusion_data %>% group_by(fusion_cluster_att) %>% tally() %>% mutate(pct=prop.table(n))
-
-```
-
-```{r}
-# restrict to primary fusions
 fusion_data %>% filter(is_primary) %>% group_by(fusion_cluster_att) %>% tally() %>% mutate(pct=prop.table(n))
 ```
 
@@ -425,6 +377,8 @@ cosmic_FAR_data = fusion_data %>% filter(fusion_name %in% cosmic_fusions_in_C4) 
 cosmic_FAR_data %>%
   ggplot(aes(x=FAR_type, y=FAR_val)) + geom_boxplot() + facet_wrap(~fusion_name, scale='free_y')
 ```
+
+- used for Figure S5:
 
 ```{r}
 

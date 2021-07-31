@@ -34,11 +34,16 @@ The structure of this work can be divided into the following order:
 - [0.Decorate_input_files/Decorate_input_files.Rmd](0.Decorate_input_files/Decorate_input_files.Rmd) : Preprocessing of the STAR-Fusion predictions to include annotations (additional columns) to faclitate downstream data analyses.
 
 - [1.Examine_TCGA_n_GTEx_StarF1.7/STAR-Fusion_v1.7_TCGA_n_GTEx.Rmd](1.Examine_TCGA_n_GTEx_StarF1.7/STAR-Fusion_v1.7_TCGA_n_GTEx.Rmd) : Analysis of the preponderance of fusions in TCGA tumor/normal and GTEx normal samples from the STAR-Fusion survey in (A) above.
-  - yields Figure 4 and Figure S4
+  - yields Figure 3 and Figure S4
   
 - [1.Examine_TCGA_n_GTEx_StarF1.7/Tumor_vs_Normal_Fusion_Expression.Rmd](1.Examine_TCGA_n_GTEx_StarF1.7/Tumor_vs_Normal_Fusion_Expression.Rmd) : fusions found in more than 3 tumor and more than 3 normal samples are tested for differences in fusion expression value (FFPM) using t-tests and Wilcoxon rank sum tests, generating output: [data/TCGA_n_GTEx.STAR-Fusion.v1.7.tumor_normal_fusion_expression_comparison_stats.tsv.gz](data/TCGA_n_GTEx.STAR-Fusion.v1.7.tumor_normal_fusion_expression_comparison_stats.tsv.gz)
 
 - [2.Scaling_n_Clustering_Fusions/Scaling_and_Clustering_Fusions.Rmd](2.Scaling_n_Clustering_Fusions/Scaling_and_Clustering_Fusions.Rmd) : demonstration of the workflow used to scale fusion attributes, define fusion clusters, and analyze the COSMIC fusion content of those clusters.
+
+- [3.Annotate_Leiden_Fusion_Clusters/3.1.Examine_Leiden_Res_Cosmic_Enrichment](3.Annotate_Leiden_Fusion_Clusters/AnnotateLeidenClusters.Rmd) : Examines clusters of fusions derived from (C) above, annotates the clusters according to COSMIC-like, artifact-like, or other, and explores characteristics of C4 and COSMIC fusions enriched in C4.
+  - yields Figure 4 and S5
+  
+
 
 
 
