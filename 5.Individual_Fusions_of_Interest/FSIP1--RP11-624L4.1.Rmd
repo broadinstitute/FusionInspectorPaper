@@ -1,7 +1,5 @@
 ---
 title: "FSIP1--RP11-624L4.1"
-author: "Brian Haas"
-date: "2/20/2021"
 output: html_document
 ---
 

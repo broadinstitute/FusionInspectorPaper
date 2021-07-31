@@ -1,7 +1,5 @@
 ---
 title: "examine_indiv_fusions"
-author: "Brian Haas"
-date: "7/15/2021"
 output: html_document
 ---
 
@@ -9,6 +7,23 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
+
+# Examination of various fusion gene pairs
+
+Includes:
+
+TMPRSS2--ERG
+FGFR3--TACC3
+CCAT1--CASC8
+VCL--ADK
+PVT1--MYC
+BCR--ABL1
+VTI1A--TCF7L2
+CELA3A--CPA2
+SSX-SS18
+TFG--GPR128
+
+
 
 
 ```{r}
@@ -53,14 +68,6 @@ person_counts_per_tissue_type = orig_STARF_fusion_preds %>%
     unique() %>% 
     group_by(tissue_type, data_class) %>% 
     tally(name='person_counts')
-
-```
-
-
-# Examine some specific fusions.
-
-
-```{r}
 
 # helper utilities for below
 

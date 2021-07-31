@@ -1,7 +1,5 @@
 ---
 title: "COL1A1--FN1.Rmd"
-author: "Brian Haas"
-date: "7/16/2021"
 output: html_document
 ---
 
