@@ -31,5 +31,7 @@ The structure of this work can be divided into the following order:
 
 # Supplemental Code
 
+- [0.Decorate_input_files/Decorate_input_files.Rmd](0.Decorate_input_files/Decorate_input_files.Rmd) : Preprocessing of the STAR-Fusion predictions to include annotations (additional columns) to faclitate downstream data analyses.
+
 
 
