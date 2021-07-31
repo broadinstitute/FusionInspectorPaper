@@ -49,6 +49,13 @@ The structure of this work can be divided into the following order:
 - [4.Targeted_FI_to_Cluster4/C4_targeted_FI.Rmd](4.Targeted_FI_to_Cluster4/C4_targeted_FI.Rmd) : Examines characteristics of the 236 fusion genes based on occurrences identified in (D) above.
    - yields Figures 5 and 6S
    
+- [5.Individual_Fusions_of_Interest](5.Individual_Fusions_of_Interest) : Includes explorations of specific gene fusions, as detailed below.
+  - [5.Individual_Fusions_of_Interest/Variety_of_indiv_fusions.Rmd](5.Individual_Fusions_of_Interest/Variety_of_indiv_fusions.Rmd) : includes studies of TMPRSS2--ERG, FGFR3--TACC3, CCAT1--CASC8, VCL--ADK, PVT1--MYC, BCR--ABL1, VTI1A--TCF7L2, CELA3A--CPA2, SSX-SS18, TFG--GPR128 and yields corresponding supplementary figures.
+  - [5.Individual_Fusions_of_Interest/COL1A1--FN1.Rmd](5.Individual_Fusions_of_Interest/COL1A1--FN1.Rmd) : COL1A1--FN1 in CAFs, yields Figure S2
+  - [5.Individual_Fusions_of_Interest/EML4--ALK.Rmd](5.Individual_Fusions_of_Interest/EML4--ALK.Rmd) : EML4--ALK, yields Figure 2a
+  - [5.Individual_Fusions_of_Interest/FSIP1--RP11-624L4.1.Rmd](5.Individual_Fusions_of_Interest/FSIP1--RP11-624L4.1.Rmd) : FSIP1--RP11-624L4.1, yields Figure 6
+  - [5.Individual_Fusions_of_Interest/KANSL1--ARL17.Rmd](5.Individual_Fusions_of_Interest/KANSL1--ARL17.Rmd) : KANSL1--ARL17, yields Figure S7
+  - [5.Individual_Fusions_of_Interest/KRT13--KRT4.Rmd](5.Individual_Fusions_of_Interest/KRT13--KRT4.Rmd) : KRT13--KRT4, yields Figure 2b
 
 
 
