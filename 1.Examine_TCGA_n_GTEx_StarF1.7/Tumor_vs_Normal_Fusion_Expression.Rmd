@@ -51,6 +51,8 @@ for (fusion in fusions_to_test_expr_ranking) {
   
 }
 
+pvals$t_p_BH = p.adjust(pvals$t_p, method='BH')
+pvals$w_p_BH = p.adjust(pvals$w_p, method='BH')
 
 write.table(pvals, file="TCGA_n_GTEx.STAR-Fusion.v1.7.tumor_normal_fusion_expression_comparison_stats.tsv", 
             quote=F, sep="\t", row.names = F)
