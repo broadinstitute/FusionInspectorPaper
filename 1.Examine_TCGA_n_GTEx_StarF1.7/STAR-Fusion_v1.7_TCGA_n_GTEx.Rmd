@@ -11,6 +11,9 @@ library(tidyverse)
 library(extrafont)
 ```
 
+# Examining preponderance of fusions in tumors and normal tissues
+
+Inputs: STAR-Fusion predictions across TCGA and GTEx
 
 ```{r}
 data = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
@@ -21,11 +24,27 @@ data = data %>% mutate(dataclassTN = paste0(data_class, "-", tumor_or_normal))
 
 data %>% select(dataclassTN, sample_name) %>% unique() %>% ungroup() %>% group_by(dataclassTN) %>% tally()
 
+```
+
+Perform some initial filtering, removing mitochondrial fusions, HLA and immunoglobulin fusions so that they don't confound aspects of our analysis.
+
+```{r}
+
 ## some initial cleanup
 data = data %>% 
   filter(! grepl("chrM", Annots)) %>%
   filter(! grepl("HLA", fusion_name)) %>%
   filter(! (grepl("^IG[HKVL]", LeftGene) & grepl("^IG[HKVL]", RightGene)))
+
+```
+
+
+To focus on fusion occurrences, we restrict our analysis to the primary isoforms and exclude the more lowly expressed alternative fusion isoforms where they exist.
+
+Also, we restrict to those isoforms that have breakpoints consistent with splice sites of reference gene structures to minimize the impact of RT-artifacts contributing to this analysis.
+
+```{r}
+
 
 ## only consider the primary isoform.
 data = data %>% filter(is_primary)
@@ -42,11 +61,12 @@ data %>% select(dataclassTN, sample_name) %>% unique() %>% ungroup() %>% group_b
 ```
 
 
+Compute fusion counts per sample and median fusion counts per tissue type according to minimum fusion expression (FFPM) value:
 
 
 ```{r}
 
-get_FPM_vs_min_FFPM_via_tissue_type = function (data, min_ffpm_vals = seq(0, 0.3, 0.025)) {
+get_fusion_counts_vs_min_FFPM_via_tissue_type = function (data, min_ffpm_vals = seq(0, 0.3, 0.025)) {
     
     fusion_counts_vs_min_ffpm = NULL
     
@@ -82,22 +102,11 @@ get_FPM_vs_min_FFPM_via_tissue_type = function (data, min_ffpm_vals = seq(0, 0.3
 }
 
 
-```
 
 
-```{r}
+tissue_fusion_counts_vs_min_ffpm = get_fusion_counts_vs_min_FFPM_via_tissue_type(data)
 
 
-
-tissue_fusion_counts_vs_min_ffpm = get_FPM_vs_min_FFPM_via_tissue_type(data)
-
-
-```
-
-
-Compute median fusion count for each tissue type
-
-```{r}
 median_tissue_fusion_counts = tissue_fusion_counts_vs_min_ffpm  %>% 
     group_by(data_class, dataclassTN, tissue_type, min_ffpm) %>% 
     summarize(median_fusion_count = median(fusion_count)) %>% ungroup()
@@ -123,6 +132,9 @@ median_tissue_fusion_counts %>% filter(dataclassTN == "TCGA-tumor") %>%
 
 
 Jitter plots for counts of fusions per tissue type according to data class (ie. tcga-tumor, tcga-normal, and gtex-normal)
+
+- Used to generate Figure S4a
+
 ```{r}
 
 
@@ -169,6 +181,8 @@ for (min_ffpm_use in min_ffpms) {
 ```
 
 
+Examine the statistical significance of differences between the sets of median fusion counts
+
 ```{r}
 
 median_count_stats = median_count_stats %>% mutate(tnegLogP = -1 * log(tp_value))
@@ -178,11 +192,17 @@ median_count_stats
 
 ```
 
+We generally don't see significant differences between GTEx normal and TCGA tumors with unfiltered fusion predictions and when filtering according to min 0.1 FFPM, and while there are peculiar significant differences observed at 0>min_ffpm>0.1 FFPM filtering, overall we have little evidence for differences and they dissipate with more reasonable filtering criteria (min 0.1 FFPM).  It is encouraging that we see increasing statistical significance between TCGA-tumor and TCGA-normal median fusion counts as we increase the fusion expression threshold. This is explored further below with more precise testing of paired samples according to tissue types.
+
+
+As shown below, the median counts of the medians of fusions per sample type are 4 to 5 fusions per sample type when filtering at 0.1 FFPM.
 ```{r}
 
 median_tissue_fusion_counts %>% filter(min_ffpm == 0.1) %>% group_by(dataclassTN) %>% summarize(median(median_fusion_count))
 
 ```
+
+Pancreas is unusual, with a median count of 27 fusions at 0.1 min FFPM threshold. We investigate fusions in pancreas more extensively later, and - spoiler alert - we basically find that many of these pancreas fusions result from very highly expressed fusion partners, and while some look to possibly result from RT-artifacts, many of them generate in-frame fusions and could result from trans-splicing, so highly suspicious but potentially functional products worth exploring further.
 
 ```{r}
 
@@ -192,48 +212,19 @@ median_tissue_fusion_counts %>% filter(min_ffpm == 0.1) %>% filter(tissue_type =
 
 
 
+Below we examine paired tumor/normal samples from TCGA to see whether we detect differences in fusion counts, as we would expect.
 
+Here we plot TCGA tumor/normal median fusion counts according to matched sample types and examine the effect of filtering based on min FFPM.
 
-Plot TCGA tumor/normal median fusion counts according to matched sample types.
+- used for Figure S4b
+
 
 ```{r}
+
 
 tcga_tissues_with_matched_normals = median_tissue_fusion_counts %>% filter(dataclassTN == "TCGA-normal") %>% 
     select(tissue_type) %>% unique() %>% pull(tissue_type)
 
-
-for (min_ffpm_use in min_ffpms) {
-    
-  # statistical analysis of medians
-  tumor_normal_paired_medians = median_tissue_fusion_counts %>% 
-    filter(data_class == "TCGA" & tissue_type %in% tcga_tissues_with_matched_normals & min_ffpm == min_ffpm_use) %>%
-    arrange(tissue_type) %>% spread(key=dataclassTN, value=median_fusion_count)
-  
-   normal_medians = tumor_normal_paired_medians %>% select(`TCGA-normal`) %>% pull(`TCGA-normal`)
-   tumor_medians = tumor_normal_paired_medians %>% select(`TCGA-tumor`) %>% pull(`TCGA-tumor`)
-   t = t.test(tumor_medians, normal_medians, paired = T)
-   print(min_ffpm_use)
-   print(t)
-  
-   
-   p = median_tissue_fusion_counts %>% filter(data_class == "TCGA" & tissue_type %in% tcga_tissues_with_matched_normals) %>%
-     filter(min_ffpm == min_ffpm_use) %>%
-     ggplot(aes(x=tissue_type, y=median_fusion_count, fill=dataclassTN)) + geom_col(position='dodge') + 
-     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) +
-     ggtitle(paste("Median TCGA fusion counts at min FFPM threshold: ", min_ffpm_use))
-   
-   
-   
-       
-   plot(p)
-   
-}
-
-```
-
-
-
-```{r}
 
 source("../Rlib/geom_split_violin.R")
 
@@ -295,6 +286,8 @@ for (min_ffpm_use in min_ffpms) {
 
 ```
 
+Below we investigate the statistical significance of differences in the violin plots
+
 ```{r}
 
 # correct p-values for mult tests
@@ -313,6 +306,7 @@ plot(p)
 
 ```
 
+Examine number of tumor samples having significant differences given the minimum FFPM 
 
 ```{r}
 
@@ -322,26 +316,13 @@ tumor_normal_compare_pvalues %>% filter(signif) %>% group_by(min_ffpm) %>% tally
 ```
 
 
-```{r}
 
 
-for (min_ffpm_use in min_ffpms) {
+## Examine distribution of fusion expression levels
 
-    p =  median_tissue_fusion_counts %>% 
-        filter(min_ffpm == min_ffpm_use) %>% 
-        group_by(dataclassTN, min_ffpm) %>% 
-        summarize(median_of_medians = median(median_fusion_count)) %>%
-        ggplot(aes(x=dataclassTN, y=median_of_medians)) + geom_col() + 
-        ggtitle(paste("Median of median fusion counts, min ffpm = ", min_ffpm_use))
-    
-    plot(p)
+Below we explore the distribution of fusion expression levels according to the classes of fusions, and examine the subset of COSMIC fusions in comparison
 
-}
-
-```
-
-
-# Examine distribution of fusion expression levels
+- used for Figure 4b
 
 ```{r}
 
@@ -358,9 +339,6 @@ df_FFPM = bind_rows( data.frame(dataclass="Cosmic", FFPM=cosmic_fusion_FFPM),
                      data.frame(dataclass="TCGA-tumor", FFPM=TCGA_tumor_FFPM),
                      data.frame(dataclass="TCGA-normal", FFPM=TCGA_normal_FFPM) ) 
 
-```
-
-```{r}
                      
 p = df_FFPM %>% mutate(FFPM_max1 = pmin(1, FFPM)) %>% ggplot(aes(x=FFPM_max1, color=dataclass)) + geom_density(alpha=0.2) + xlim(0, 1) + xlab("Density") + ylab("FFPM") +
   theme(legend.title = element_text(size = rel(0.7)),
@@ -374,6 +352,8 @@ ggsave("fuson_expr_density.svg", p, width=7.65, height=5.1)
 ```
 
 Compare ECDFs for the above.
+
+- used for Figure 4c
 ```{r}
 
 cosmic_fusion_FFPM_ecdf = ecdf(cosmic_fusion_FFPM)
@@ -389,9 +369,7 @@ df_ecdf = bind_rows( data.frame(dataclass="Cosmic", minFFPM=ecdf_range, cum_frac
                      data.frame(dataclass="TCGA-normal", minFFPM=ecdf_range, cum_frac=TCGA_normal_FFPM_ecdf(ecdf_range)) )
 
 
-```
 
-```{r}
 p = df_ecdf %>% ggplot(aes(x=minFFPM, y=cum_frac, color=dataclass)) + geom_point() + 
        xlab("Minimum FFPM") + ylab("Cumulative Fraction") +
    theme(legend.title = element_text(size = rel(0.7)),
@@ -427,6 +405,10 @@ fisher.test(m)
 
 ## Examine the COSMIC fusions:
 
+Below we count the fraction of tumor or normal samples that correspond to COSMIC fusions
+
+- used for Figure 4a
+
 ```{r}
 
 cosmic_fusion_occurrence = data2 %>% filter(data_class == "GTEx" | tumor_or_normal == "tumor") %>% 
@@ -459,9 +441,6 @@ ranked_fusions = cosmic_fusion_occurrence %>%
     arrange(desc(sumpct)) %>% 
     select(fusion_name)
  
-```
-
-```{r}
 
 p = cosmic_fusion_occurrence %>% 
     ggplot(aes(x=factor(fusion_name, levels=ranked_fusions$fusion_name), y=sample_pct, fill=sample_tissue)) + 
@@ -489,6 +468,8 @@ cosmic_fusion_occurrence %>% filter(grepl("GTEx", sample_tissue)) %>% arrange(de
 
 
 Examine distribution of FFPM for cosmic fusions
+
+- used for Figure 4d
 
 ```{r}
 
