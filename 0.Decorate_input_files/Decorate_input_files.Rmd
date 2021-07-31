@@ -10,12 +10,30 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
+
+# Decorating the TCGA and GTEx STAR-Fusion predictions with annotations
+
+To simplify downstream analyses, here we incorporate some additional attributes into the fusion prediction dataframe, including impact of the fusion on coding regions, types of chromosome rearrangements inferred from fusion partner gene locations, and compute levels of tumor enrichment based on sample types containing corresponding fusions.
+
 ```{r}
-# retrieve full list of the original STAR-F fusions
+# retrieve full list of the original STAR-Fusion fusion predictions across GTEx and TCGA samples
 orig_starF_fusions_FULL= read.table(gzfile("../data/fusions_consolidated.Sep2019.dat.gz"), 
                                      header=T, sep="\t", stringsAsFactors = F, check.names = F)
 
+```
 
+
+## fusion coding effects
+
+FusionAnnotator (which ships with FusionInspector) was run on the unique isoform breakpoint combinations via:  
+
+     FusionInspector/FusionAnnotator/util/fusion_to_coding_region_effect.pl
+
+to generate annotations: '../data/fusions.coding_effects.abridged.tsv.gz'
+
+This explores all combinations of isoforms between the fusion partners joined at the putative breakpoint. The longest In-frame fusion is selected as the representative. If no in-frame fusion is possible, the longest fusion transcript combination is selected.  If the breakpoint is limited to a noncoding region of either fusion partner, then we define it as 'including noncoding' (or tagged as 'INCL_NONCODING')
+
+```{r}
 # include coding info
 coding_info = read.table(gzfile("../data/fusions.coding_effects.abridged.tsv.gz"), header=T, sep="\t", com='')
 
@@ -26,6 +44,13 @@ coding_info$PROT_FUSION_TYPE = factor(str_replace( as.character(coding_info$PROT
 
 orig_starF_fusions_FULL= left_join(orig_starF_fusions_FULL, coding_info, 
                                     by=c('fusion_name', 'LeftBreakpoint', 'RightBreakpoint'))
+
+```
+
+
+Below we include a 'tumor_or_normal' column to indicate whether the sample corresponds to a tumor or normal sample. All GTEx samples are considered 'normal', and TCGA samples are divided into 'tumor' or 'normal' according to sample.
+
+```{r}
 
 # include tumor or normal sample definition
 # define as tumor or normal sample
@@ -38,18 +63,45 @@ tumor_normal_sample_counts = orig_starF_fusions_FULL%>% select(sample_name, tumo
 total_tumor_samples = tumor_normal_sample_counts %>% filter(tumor_or_normal == "tumor") %>% pull(n)
 total_normal_samples = tumor_normal_sample_counts %>% filter(tumor_or_normal == "normal") %>% pull(n)
 
+```
+
+
+Some of the fusion predictions correspond to alternatively spliced fusion isoforms.
+
+
+We define a 'primary' isoform as that fusion isoform that has the highest fusion expression value (measured as fusion evidence RNA-seq fragments per million total sample reads - FFPM).
+
+The column 'is_primary' is added to differentiate primary (TRUE) from lesser expressed/supported fusion isoforms (FALSE).
+
+
+```{r}
+
+
 orig_starF_fusions_FULL= orig_starF_fusions_FULL%>% 
   group_by(fusion_name, sample_name) %>% 
   arrange(FFPM) %>% mutate(is_primary = (row_number() == n())) %>% ungroup()
 
 cosmic_fusions = read.table("../data/cosmic.list", header=F)[,1]
 
+```
+
+
+A column 'cosmic' is added to indicate whether the fusion is found in the COSMIC fusion database:
+
+    https://cancer.sanger.ac.uk/cosmic/fusion
+
+```{r}
+
 orig_starF_fusions_FULL= orig_starF_fusions_FULL%>% mutate(cosmic = (fusion_name %in% cosmic_fusions))
 
 ```
 
 
-organize into tumor / normal counts and compute log(T/N)
+We define tumor enrichment below and incorporate column 'logTN', which we use later to rank fusions according to enrichment in tumor samples. 
+
+This will get stored in a separate 'stats' file below.
+
+
 
 ```{r}
 
@@ -65,7 +117,14 @@ orig_starF_fusions_FULL_stats = orig_starF_fusions_FULL%>%
 ```
 
 
-Simplify structure annotations
+Below, we simplify annotations given by FusionAnnotator to a small number of categories that reflect the chromosomal positions of the fusion partners and what we might infer as structural rearrangements that would ultimately yield cis-spliced fusion transcripts.
+
+The final 'structure_type' categories include:
+
+- INTRACHROMOSOMAL
+- INTERCHROMOSOMAL
+- LOCAL_REARRANGEMENT (neighboring genes that wouldn't allow for simple readthrough explanations given the ref genome)
+- READTHRU (short for readthrough cis-splicing of transcripts from neighboring genes)
 
 ```{r}
 orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% mutate(annot_adj = Annots)
@@ -99,11 +158,13 @@ orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% select(-annot_adj)
 
 ```
 
-Save outputs for use downstream.
+Save outputs for use downstream use.
 
 ```{r}
+# the decorated STAR-Fusion fusion predictions file
 write.table(orig_starF_fusions_FULL, file="TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv", quote=F, sep="\t", row.names = F)
 
+# the log(T/N) tumor enrichment stats
 write.table(orig_starF_fusions_FULL_stats, file="TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv", quote=F, sep="\t", row.names = F)
 
 ```
