@@ -78,7 +78,7 @@ plot_tcga_sample_fractions = function(fusion_list) {
     tcga_type_fractions_plot = tcga_type_fractions %>%
         ggplot(aes(x=fusion_name, y=tissue_type, fill=tissue_fraction)) + geom_tile() +
         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
-        theme(axis.text.y = element_text(size=rel(0.2)))
+        theme(axis.text.y = element_text(size=rel(0.2))) + scale_fill_continuous(high = "#132B43", low = "#56B1F7")
 
     return(tcga_type_fractions_plot)
 
@@ -107,7 +107,7 @@ plot_gtex_sample_fractions = function(fusion_list) {
     gtex_type_fractions_plot = gtex_type_fractions %>% filter(fusion_name %in% fusion_list) %>%
         ggplot(aes(x=fusion_name, y=tissue_type, fill=tissue_fraction)) + geom_tile() +
        theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
-        theme(axis.text.y = element_text(size=rel(0.2)))
+        theme(axis.text.y = element_text(size=rel(0.2))) + scale_fill_continuous(high = "#132B43", low = "#56B1F7")
 
   return(gtex_type_fractions_plot)
 
@@ -142,7 +142,7 @@ plot_IN_SIGNIF_EXPR_indicator = function(fusion_list, max_w_p = 0.05, min_fold_c
 
 
     data_to_plot = orig_STARF_tumor_normal_stats %>% filter(fusion_name %in% fusion_list) %>%
-        select(fusion_name, w_p, fold_change)
+        select(fusion_name, w_p_BH, fold_change)
 
 
     signif_expr_indication_plot = ggplot()
@@ -150,7 +150,7 @@ plot_IN_SIGNIF_EXPR_indicator = function(fusion_list, max_w_p = 0.05, min_fold_c
     if (nrow(data_to_plot) > 0) {
 
         signif_expr_indication_plot = data_to_plot %>%
-            mutate(signif_expr = ifelse( (! is.na(w_p)) & w_p < max_w_p & fold_change > min_fold_change, TRUE, NA)) %>%
+            mutate(signif_expr = ifelse( (! is.na(w_p_BH)) & w_p_BH < max_w_p & fold_change > min_fold_change, TRUE, NA)) %>%
             ggplot(aes(x=fusion_name, y=TRUE, fill=signif_expr)) + geom_tile() +
             theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
             theme(axis.title.y=element_blank(), axis.text.y = element_blank(), axis.ticks.y=element_blank()) +
@@ -167,22 +167,23 @@ plot_IN_SIGNIF_EXPR_indicator = function(fusion_list, max_w_p = 0.05, min_fold_c
 
 plot_tumor_normal_logratio = function(fusion_list, remove_xlab=FALSE) {
 
+    # convert to log for plotting
     data_to_plot_selected = orig_STARF_tumor_normal_stats %>%
         filter(fusion_name %in% fusion_list) %>%
-        mutate(log_normal = log(normal+1), log_tumor = log(tumor+1)) %>%
-        mutate(log_normal = -1 * log_normal) %>%
-        gather(key=tumor_or_normal, value=log_sample_count, log_normal, log_tumor)
+        mutate(normal = log(normal+1), tumor = log(tumor+1)) %>%
+        mutate(normal = -1 * normal) %>%
+        gather(key=tumor_or_normal, value=sample_count, normal, tumor)
 
     max_logTN = max(abs(data_to_plot_selected$logTN))
     #message("max logTN: ", max_logTN)
 
-    max_sample_count = max(data_to_plot_selected$log_sample_count)
-    min_sample_count = min(data_to_plot_selected$log_sample_count)
+    max_sample_count = max(data_to_plot_selected$sample_count)
+    min_sample_count = min(data_to_plot_selected$sample_count)
 
 
     ## plot Tumor / Normal sample counts.
     p = data_to_plot_selected %>%
-        ggplot(aes(x=fusion_name, y=log_sample_count, fill=tumor_or_normal)) + geom_col()
+        ggplot(aes(x=fusion_name, y=sample_count, fill=tumor_or_normal)) + geom_col()
 
     ## plot logTN
     p = p + geom_col(data=data_to_plot_selected, aes(y=logTN), fill='gray', alpha=0.5)
