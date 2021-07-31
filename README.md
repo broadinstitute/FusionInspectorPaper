@@ -43,6 +43,9 @@ The structure of this work can be divided into the following order:
 - [3.Annotate_Leiden_Fusion_Clusters/3.1.Examine_Leiden_Res_Cosmic_Enrichment](3.Annotate_Leiden_Fusion_Clusters/AnnotateLeidenClusters.Rmd) : Examines clusters of fusions derived from (C) above, annotates the clusters according to COSMIC-like, artifact-like, or other, and explores characteristics of C4 and COSMIC fusions enriched in C4.
   - yields Figure 4 and S5
   
+- [3.Annotate_Leiden_Fusion_Clusters/3.1.Examine_Leiden_Res_Cosmic_Enrichment/ExamineLeidenResolutionCosmicEnrichment.Rmd](3.Annotate_Leiden_Fusion_Clusters/3.1.Examine_Leiden_Res_Cosmic_Enrichment/ExamineLeidenResolutionCosmicEnrichment.Rmd) : Exploration of Leiden resolution parameter on fusion clustering and COSMIC fusion enrichments.
+  - yields Figure S12
+  
 
 
 
