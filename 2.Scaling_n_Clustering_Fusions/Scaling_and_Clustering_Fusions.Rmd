@@ -1,7 +1,5 @@
 ---
 title: "Scaling_and_Clustering_Fusions"
-author: "Brian Haas"
-date: "2/9/2021"
 output: html_document
 ---
 
@@ -16,6 +14,14 @@ library(FNN)
 library(igraph)
 library(pheatmap)
 ```
+
+
+Below demonstrates the general process by which we scaled fusion attribute values, generated fusion clusters, and examined the content of those clusters.
+
+Note, it isn't clear that this process can be run as fully reproducible. Running it on different machines has yielded different results - however, the numbers of clusters defined are similar and the enrichments we observe for COSMIC fusions are consistent.
+
+- See ../3.Annotate_Leiden_Fusion_Clusters/AnnotateLeidenClusters.Rmd for how we analyzed our UMAP ordination and defined clusters.
+
 
 ```{r}
 
@@ -176,6 +182,8 @@ fusion_data$leiden = as.character(partition)
 ```
 
 
+Plot umap for all fusion isoforms and highlight COSMIC isoforms
+
 ```{r}
 umap.layout.cent = fusion_data %>% select(umap1, umap2, leiden) %>% group_by(leiden) %>% summarize_all(mean)
 
@@ -204,7 +212,7 @@ plot(p)
 
 ```
 
-## restrict cosmic entries to just those highest expressed isoforms per sample.
+Restrict cosmic entries to just those highest expressed isoforms (primary isoforms) per sample.
 
 ```{r}
 cosmic.primary_isoform = cosmic_subset %>% filter(is_primary)
@@ -217,7 +225,7 @@ plot(p)
 
 
 
-Cosmic fusion cluster content
+Examine the median feature attribute for each cluster to understand differences between fusion clusters
 ```{r}
 
 max_cluster = max(partition)
@@ -248,10 +256,6 @@ for (cluster_i in seq(max_cluster)) {
 rownames(all_median_vals_df) = all_median_vals_df$cluster
 
 all_median_vals_df = all_median_vals_df[,!c(colnames(all_median_vals_df)=='cluster')]
-
-```
-
-```{r}
 
 median_vals_pca = prcomp(t(all_median_vals_df))
 rows_d = dist(median_vals_pca$rotation[,1:6])
