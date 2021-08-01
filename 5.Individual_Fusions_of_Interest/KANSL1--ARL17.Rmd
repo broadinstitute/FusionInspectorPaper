@@ -58,9 +58,9 @@ orig_STARF_fusion_preds = orig_STARF_fusion_preds %>%
 
 
 person_counts_per_tissue_type = orig_STARF_fusion_preds %>% 
-    select(tissue_type, data_class, patient_name) %>% 
+    select(tissue_type, data_class, tumor_or_normal, patient_name) %>% 
     unique() %>% 
-    group_by(tissue_type, data_class) %>% 
+    group_by(tissue_type, data_class, tumor_or_normal) %>% 
     tally(name='person_counts')
 
 ```
@@ -73,9 +73,9 @@ examine_sample_fractions_with_fusion = function(input_fusion_name) {
     # get sample fusion counts
     fusion_counts_per_tissue_type = orig_STARF_fusion_preds %>% 
     filter(fusion_name == input_fusion_name) %>% 
-               select(tissue_type, data_class, patient_name) %>% 
+               select(tissue_type, data_class, tumor_or_normal, patient_name) %>% 
                unique() %>% 
-               group_by(tissue_type, data_class) %>% 
+               group_by(tissue_type, data_class, tumor_or_normal) %>% 
         tally(name='have_fusion_counts')
     
 
@@ -92,9 +92,11 @@ examine_sample_fractions_with_fusion = function(input_fusion_name) {
     message("median frac: ", median(count_table$frac))
 
     p = count_table %>% ggplot(aes(x=person_counts, y=frac)) + 
-        geom_point(aes(color=data_class)) +       
+        geom_point(aes(color=tumor_or_normal, shape=data_class)) +       
         geom_hline(yintercept=median(count_table$frac), color='red') +
-        ggtitle(input_fusion_name)
+        ggtitle(input_fusion_name) +
+        xlab("# individuals in sample group") +
+        ylab("Fraction with fusion")
     
     plot(p)
     
@@ -129,11 +131,6 @@ examine_sample_fractions_with_fusion("KANSL1--LRRC37")
 ```
 
 
-```{r}
-
-examine_sample_fractions_with_fusion("TFG--GPR128")
-
-```
 
 Examine the supposed association of TMPRSS2--ERG fusions with KANSL1--ARL17
 

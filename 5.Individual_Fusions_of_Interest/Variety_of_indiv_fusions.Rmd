@@ -37,7 +37,7 @@ orig_STARF_fusion_preds = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.
 fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.C4_targeted_fusions.tsv.gz"), header=T, 
                          sep="\t", stringsAsFactors = F)
 
-FI_samples = read.table("../data/FusionInspector.v2.4.0.C4_targeted_fusions.samples.list", header=F, stringsAsFactors = F)[,1]
+FI_samples = read.table("../data/FusionInspector.v2.4.0.C4_targeted_fusions.sample_list", header=F, stringsAsFactors = F)[,1]
 
 fusion_annot_class_stats = fusion_data %>% filter(is_primary) %>%
     mutate(annot_type = fusion_cluster_att) %>%
@@ -64,11 +64,13 @@ fusion_annot_class_stats = left_join(fusion_annot_class_stats, fusion_fraction_C
 
 
 person_counts_per_tissue_type = orig_STARF_fusion_preds %>% 
-    select(tissue_type, data_class, patient_name) %>% 
+    select(tissue_type, data_class, tumor_or_normal, patient_name) %>% 
     unique() %>% 
-    group_by(tissue_type, data_class) %>% 
+    group_by(tissue_type, data_class, tumor_or_normal) %>% 
     tally(name='person_counts')
+```
 
+```{r}
 # helper utilities for below
 
 
@@ -77,9 +79,9 @@ examine_sample_fractions_with_fusion = function(input_fusion_name) {
     # get sample fusion counts
     fusion_counts_per_tissue_type = orig_STARF_fusion_preds %>% 
     filter(fusion_name == input_fusion_name) %>% 
-               select(tissue_type, data_class, patient_name) %>% 
+               select(tissue_type, data_class, tumor_or_normal, patient_name) %>% 
                unique() %>% 
-               group_by(tissue_type, data_class) %>% 
+               group_by(tissue_type, data_class, tumor_or_normal) %>% 
         tally(name='have_fusion_counts')
     
 
@@ -96,9 +98,11 @@ examine_sample_fractions_with_fusion = function(input_fusion_name) {
     message("median frac: ", median(count_table$frac))
 
     p = count_table %>% ggplot(aes(x=person_counts, y=frac)) + 
-        geom_point(aes(color=data_class)) +       
+        geom_point(aes(color=tumor_or_normal, shape=data_class)) +       
         geom_hline(yintercept=median(count_table$frac), color='red') +
-        ggtitle(input_fusion_name)
+        ggtitle(input_fusion_name) +
+        xlab("# individuals in sample group") +
+        ylab("Fraction with fusion")
     
     plot(p)
     
