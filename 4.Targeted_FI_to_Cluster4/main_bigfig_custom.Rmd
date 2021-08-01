@@ -16,7 +16,7 @@ library(cowplot)
 fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.C4_targeted_fusions.tsv.gz"), header=T, 
                          sep="\t", stringsAsFactors = F)
 
-FI_samples = read.table("../data/FusionInspector.v2.4.0.C4_targeted_fusions.samples.list", header=F, stringsAsFactors = F)[,1]
+FI_samples = read.table("../data/FusionInspector.v2.4.0.C4_targeted_fusions.sample_list", header=F, stringsAsFactors = F)[,1]
 
 fusions_of_interest = fusion_data %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
 

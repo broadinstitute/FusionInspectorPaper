@@ -204,7 +204,7 @@ plot_tumor_normal_logratio = function(fusion_list, remove_xlab=FALSE) {
 
     p = p + scale_y_continuous(breaks = top_n_bottom_break_positions, labels = top_n_bottom_labels) +
         theme(axis.text.y = element_text(size=rel(0.7))) +
-        ylab("log(#samples+1)")
+        ylab("#samples")
 
 
 
@@ -324,5 +324,4 @@ batch_ranked_fusion_plots = function(fusion_list, num_show_per_plot=50, remove_x
   }
 
 }
-
 
