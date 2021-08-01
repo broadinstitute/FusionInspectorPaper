@@ -47,7 +47,7 @@ stingray_plot = function(data, include_background=FALSE) {
 breakpoint_plot = function(fusion_data, microhomology_data, title, fusion_brkpt_size_by=c("FFPM", "num_samples")) {
 
     #message(fusion_data)
-    
+
     fusion_brkpt_size_by = match.arg(fusion_brkpt_size_by)
 
     splice_type_colors = c("ONLY_REF_SPLICE" = "purple",
@@ -56,8 +56,8 @@ breakpoint_plot = function(fusion_data, microhomology_data, title, fusion_brkpt_
 
     splice_dinuc_shapes = c("Consensus" = 16,
                             "Non" = 17)
-    
-    
+
+
     if (fusion_brkpt_size_by == "FFPM") {
 
         p = fusion_data %>% ggplot() +
@@ -132,6 +132,9 @@ breakpoint_plot = function(fusion_data, microhomology_data, title, fusion_brkpt_
     if (nrow(microhomology_data) > 0 ) {
         p = p + geom_point(data=microhomology_info, aes(x=lend, y=rend), size=0.5)
     }
+
+
+    p = p + xlab("5' gene") + ylab("3' gene")
 
     return(p)
 }

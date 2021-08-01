@@ -116,7 +116,7 @@ ggsave("FISP1_RP11-expr_correlation.svg", p, width=6, height=4)
 
 ```{r}
 cor(expr_matrix_tidy$FSIP1, expr_matrix_tidy$RP11.624L4.1)
-
+cor.test(expr_matrix_tidy$FSIP1, expr_matrix_tidy$RP11.624L4.1)
 ```
 
 
@@ -124,5 +124,24 @@ cor(expr_matrix_tidy$FSIP1, expr_matrix_tidy$RP11.624L4.1)
 cor(expr_matrix_tidy$FSIP1, expr_matrix_tidy$GAPDH)
 
 ```
+
+
+
+# look at the expression-breakpoint-microhomology plot
+
+```{r}
+
+source("../Rlib/RT_artifact_funcs.R")
+source("fusion_brkpt_plot_util.R")
+
+fusion_preds_tsv = "__data/FSIP1--RP11.624L4.1_data/fusions.tsv"
+microhomologies_tsv = "__data/FSIP1--RP11.624L4.1_data/microH.dat"
+fusion_name = "FSIP1--RP11.624L4.1"
+```
+
+
+
+
+
 
 

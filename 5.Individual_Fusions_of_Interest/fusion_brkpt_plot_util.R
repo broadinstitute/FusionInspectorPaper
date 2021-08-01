@@ -1,7 +1,7 @@
 
 
 
-fusion_brkpt_expression_homology_plotter = function(fusion_name, fusion_preds_tsv, microhomologies_tsv) {
+fusion_brkpt_expression_homology_plotter = function(fusion_name, fusion_preds_tsv, microhomologies_tsv, FFPM_or_num_samples = c("FFPM", "num_samples")) {
 
     fusion_preds = read.table(fusion_preds_tsv, header=T, row.names=NULL, sep="\t", stringsAsFactors=F, com='')
     colnames(fusion_preds) = str_replace(colnames(fusion_preds), "^X\\.", "")
@@ -32,7 +32,7 @@ fusion_brkpt_expression_homology_plotter = function(fusion_name, fusion_preds_ts
     fusion_pair_microhomologies = grouped_microhomologies[[fusion_name]]
 
     all_brkpt_plot_ffpm = breakpoint_plot(fusion_preds_data, fusion_pair_microhomologies,
-                                      title=paste0(fusion_name, " FFPM"), "FFPM")
+                                      title=paste0(fusion_name, " ", FFPM_or_num_samples), FFPM_or_num_samples)
 
 
     return(all_brkpt_plot_ffpm)
