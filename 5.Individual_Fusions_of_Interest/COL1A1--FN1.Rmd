@@ -22,51 +22,26 @@ suppressPackageStartupMessages(library("cowplot"))
 ```{r}
 
 source("../Rlib/RT_artifact_funcs.R")
+source("fusion_brkpt_plot_util.R")
 
 fusion_preds_tsv = "__data/col1a1--fn1_data/fusions.tsv"
 microhomologies_tsv = "__data/col1a1--fn1_data/microH.dat"
-
-
-fusion_preds = read.table(fusion_preds_tsv, header=T, row.names=NULL, sep="\t", stringsAsFactors=F, com='')
-colnames(fusion_preds) = str_replace(colnames(fusion_preds), "^X\\.", "")
-
-
-if ('fusion_name' %in% colnames(fusion_preds) ) {
-    fusion_preds = fusion_preds %>% rename(FusionName = fusion_name)
-}
-
-if ('sample_name' %in% colnames(fusion_preds) ) {
-    fusion_preds = fusion_preds %>% rename(sample = sample_name)
-}
-
-## add splice type info for consenus vs. non-consensus dinucleotides
-
-fusion_preds = fusion_preds %>% mutate(SpliceDinuc=ifelse(LeftBreakDinuc %in% c("GT", "GC") & RightBreakDinuc == "AG", "Consensus", "Non"))
-
-grouped_fusion_preds = split(x=fusion_preds, f=fusion_preds$FusionName)
-fusion_names = names(grouped_fusion_preds)
-
-
-## parse microhomolgy data
-microhomologies = read.table(microhomologies_tsv, header=T, row.names=NULL, sep="\t", stringsAsFactors=F)
-grouped_microhomologies = split(x=microhomologies, f=microhomologies$contig)
-
 fusion_name = "COL1A1--FN1"
-
 ```
 
-```{r}
-fusion_preds_data = grouped_fusion_preds[[fusion_name]]
-fusion_pair_microhomologies = grouped_microhomologies[[fusion_name]]
 
-all_brkpt_plot_ffpm = breakpoint_plot(fusion_preds_data, fusion_pair_microhomologies,
-                                          title=paste0(fusion_name, " FFPM"), "FFPM")
+```{r}
+
+all_brkpt_plot_ffpm = fusion_brkpt_expression_homology_plotter(fusion_name, fusion_preds_tsv, microhomologies_tsv, "FFPM")
 
 plot(all_brkpt_plot_ffpm)
+
 ```
+
 ```{r}
-all_brkpt_plot_num_samples = breakpoint_plot(fusion_preds_data, fusion_pair_microhomologies,
-                                                 title=paste0(fusion_name, " num samples"), "num_samples")
+
+all_brkpt_plot_num_samples = fusion_brkpt_expression_homology_plotter(fusion_name, fusion_preds_tsv, microhomologies_tsv, "num_samples")
+
 
 plot(all_brkpt_plot_num_samples)
 
