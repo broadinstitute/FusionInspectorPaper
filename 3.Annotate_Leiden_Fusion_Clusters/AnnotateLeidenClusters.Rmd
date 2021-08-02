@@ -497,5 +497,14 @@ cosmic_cluster_info %>% filter(yes_cosmic >= 2)
 ```
 
 
+```{r}
+# count gene pairs per cluster
 
+
+fusion_data %>% filter(is_primary) %>% group_by(leiden) %>% tally()
+
+fusion_data %>% filter(is_primary) %>% select(leiden, fusion_name) %>% unique() %>% group_by(leiden) %>% tally()
+
+
+```
 
