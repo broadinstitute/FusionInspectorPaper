@@ -46,7 +46,80 @@ all_brkpt_plot_num_samples = fusion_brkpt_expression_homology_plotter(fusion_nam
 plot(all_brkpt_plot_num_samples)
 
 ```
+# Examine expression in CAFs
+
+```{r}
+
+# thanks, Riaz!!
 
 
+library(tidyverse)
+library(useful)
+library(dplyr)
+library(ggbeeswarm)
+library(ggplot2)
+library(RColorBrewer)
+library(ggrepel)
+library(ggpubr)
+
+CCLE_expression_19q3_subsetted_annotated <- read_tsv("__data/col1a1--fn1_data/CCLE_expression_19q3_subsetted_annotated.tsv")
+
+COL1A1_FN1_t_test_comparisons <- list(c("TRUE","FALSE"))
+
+CCLE_expression_19q3_subsetted_annotated$COL1A1_FN1 <- factor(CCLE_expression_19q3_subsetted_annotated$COL1A1_FN1, levels = c("TRUE","FALSE"))
+
+COL1A1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21 <- 
+    ggplot(CCLE_expression_19q3_subsetted_annotated, aes(x = COL1A1_FN1, y = COL1A1, color = COL1A1_FN1)) + 
+    geom_violin(size = 2) + 
+    scale_color_manual(values = c("Red","Black")) + 
+    stat_summary(fun.y=mean, geom="point", size=2, color=c("red","black")) + 
+    labs(title = "COL1A1 RNA expression among\nfibroblast cell lines", x = "", y = expression(log[2](TPM + 1))) + 
+    theme_bw() + 
+    theme(panel.border = element_blank(), 
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.line = element_line(colour = "black"), axis.ticks.x=element_blank(), 
+          axis.text.y = element_text(size = 20, color = "black"), 
+          axis.text.x = element_text(size = 20, color = "black"), 
+          axis.title = element_text(size = 20, color = "black"), 
+          title = element_text(size = 20, color = "black"), legend.position="none") + 
+    stat_compare_means(method = "t.test", comparisons = COL1A1_FN1_t_test_comparisons, size = 6, vjust = -1, bracket.size = 1) +
+    scale_y_continuous(limits = c(8,16), breaks = c(8,10,12,14,16)) + 
+    scale_x_discrete(labels = c("COL1A1-FN1 fusion\ntranscript present\n(19 cell lines)","COL1A1-FN1 fusion\ntranscript absent\n(20 cell lines)",""))
+
+#ggsave(here::here("results","COL1A1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21.png"),COL1A1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21)
+
+plot(COL1A1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21)
+
+```
+
+
+```{r}
+
+FN1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21 <- 
+    ggplot(CCLE_expression_19q3_subsetted_annotated, aes(x = COL1A1_FN1, y = FN1, color = COL1A1_FN1)) + 
+    geom_violin(size = 2) + 
+    scale_color_manual(values = c("Red","Black")) + 
+    stat_summary(fun.y=mean, geom="point", size=2, color=c("red","black")) + 
+    labs(title = "FN1 RNA expression among\nfibroblast cell lines", x = "", y = expression(log[2](TPM + 1))) + 
+    theme_bw() + 
+    theme(panel.border = element_blank(), 
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.line = element_line(colour = "black"), 
+          axis.ticks.x=element_blank(), 
+          axis.text.y = element_text(size = 20, color = "black"), 
+          axis.text.x = element_text(size = 20, color = "black"), 
+          axis.title = element_text(size = 20, color = "black"), 
+          title = element_text(size = 20, color = "black"), legend.position="none") + 
+    stat_compare_means(method = "t.test", comparisons = COL1A1_FN1_t_test_comparisons, size = 6, vjust = -1, bracket.size = 1) +
+    scale_y_continuous(limits = c(8,16), breaks = c(8,10,12,14,16)) + 
+    scale_x_discrete(labels = c("COL1A1-FN1 fusion\ntranscript present\n(19 cell lines)","COL1A1-FN1 fusion\ntranscript absent\n(20 cell lines)",""))
+
+#ggsave(here::here("results","FN1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21.png"),FN1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21)
+
+plot(FN1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21)
+
+```
 
 
