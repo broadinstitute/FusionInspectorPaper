@@ -4,6 +4,8 @@ suppressPackageStartupMessages(library("tidyverse"))
 
 ## functions:
 
+if (FALSE) {
+
 # stingray plot
 
 local_lib_dir=dirname(sys.frame(1)$ofile) #https://stackoverflow.com/questions/1815606/determine-path-of-the-executing-script
@@ -41,6 +43,8 @@ stingray_plot = function(data, include_background=FALSE) {
     return(p)
 }
 
+
+}
 
 
 
