@@ -87,7 +87,7 @@ COL1A1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21 <-
     scale_y_continuous(limits = c(8,16), breaks = c(8,10,12,14,16)) + 
     scale_x_discrete(labels = c("COL1A1-FN1 fusion\ntranscript present\n(19 cell lines)","COL1A1-FN1 fusion\ntranscript absent\n(20 cell lines)",""))
 
-#ggsave(here::here("results","COL1A1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21.png"),COL1A1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21)
+ggsave("COL1A1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21.svg",COL1A1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21)
 
 plot(COL1A1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21)
 
@@ -116,7 +116,7 @@ FN1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21 <-
     scale_y_continuous(limits = c(8,16), breaks = c(8,10,12,14,16)) + 
     scale_x_discrete(labels = c("COL1A1-FN1 fusion\ntranscript present\n(19 cell lines)","COL1A1-FN1 fusion\ntranscript absent\n(20 cell lines)",""))
 
-#ggsave(here::here("results","FN1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21.png"),FN1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21)
+ggsave("FN1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21.svg",FN1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21)
 
 plot(FN1_RNA_expression_among_fibroblast_cell_lines_plot_8_2_21)
 
