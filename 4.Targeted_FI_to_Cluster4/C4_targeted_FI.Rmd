@@ -133,7 +133,7 @@ batch_ranked_fusion_plots(fusions_ranked_by_logTN)
 
 # How many of these fusions are found at substantial levels in normal tissues?
 
-orig_STARF_tumor_normal_stats %>% arrange(desc(logTN)) %>% filter(logTN<=0 | abs(normal) >= 10) %>% nrow()
+orig_STARF_tumor_normal_stats %>% arrange(desc(logTN)) %>% filter(abs(normal) >= 5) %>% nrow()
 
 ```
 
@@ -208,3 +208,8 @@ fusions_in_mult_normals_n_tissues  %>% group_by(structure_type) %>% tally()
 
 ```
 
+```{r}
+
+fusions_in_mult_normals_n_tissues  %>% group_by(structure_type) %>% tally() %>% summarize(sum(n))
+
+```
