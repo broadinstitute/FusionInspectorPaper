@@ -481,20 +481,35 @@ cosmic_cluster_info %>% ggplot(aes(x=no_cosmic+yes_cosmic, y=yes_cosmic, color =
 
 
 ```{r}
-cosmic_cluster_info %>% ungroup() %>%  mutate(tot_fusions = yes_cosmic + no_cosmic) %>%
+cosmic_cluster_info_stats = cosmic_cluster_info %>% ungroup() %>%  mutate(tot_fusions = yes_cosmic + no_cosmic) %>%
     mutate(pct_all_cosmic_fusions=prop.table(yes_cosmic))  %>%
     mutate(pct_tot_fusions = prop.table(tot_fusions)) %>% 
                arrange(desc(negLOGp))
 
+cosmic_cluster_info_stats
 
 ```
 ```{r}
 # find those cosmic clusters having at least two instances. 
 #  we'll call all of these the cosmic-like fusion clusters
 
-cosmic_cluster_info %>% filter(yes_cosmic >= 2)
+cosmic_cluster_info_stats %>% filter(yes_cosmic >= 2)
 
 ```
+
+```{r}
+ 
+# Aggregate stats for the non-leiden=4 cosmic clusters:
+
+cosmic_cluster_info_stats %>% filter(yes_cosmic >= 2) %>% 
+    filter(leiden != 4) %>%
+    summarize(sum(pct_all_cosmic_fusions), sum(pct_tot_fusions))
+
+```
+
+
+
+
 
 
 ```{r}
