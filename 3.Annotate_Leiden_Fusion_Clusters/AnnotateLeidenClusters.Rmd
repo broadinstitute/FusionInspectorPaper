@@ -321,6 +321,33 @@ fusion_data = annotate_leiden_clusters(fusion_data)
 fusion_data %>% filter(is_primary) %>% group_by(fusion_cluster_att) %>% tally() %>% mutate(pct=prop.table(n))
 ```
 
+```{r}
+
+# Fraction of fusions in artifact-like clusters:
+
+artifact_fusion_data = fusion_data %>% filter(is_primary) %>% group_by(fusion_cluster_att) %>% tally() %>% mutate(pct=prop.table(n)) %>%
+    filter(fusion_cluster_att %in% c('expr_microH_RT_artifact?', 'high_counter_evidence', 'high_FAR_microH_bioinf_artifact?')) 
+
+artifact_fusion_data
+
+```
+
+```{r}
+
+artifact_fusion_fraction = artifact_fusion_data %>% summarize(sum(pct)) %>% pull()
+
+artifact_fusion_fraction
+
+```
+
+```{r}
+
+artifact_fusion_data %>% mutate(rel_frac = pct/artifact_fusion_fraction)
+
+
+```
+
+
 
 ```{r}
 # define fusions enriched in "expr_microH_RT_artifact?" category.
