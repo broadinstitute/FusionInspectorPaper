@@ -348,6 +348,18 @@ artifact_fusion_data %>% mutate(rel_frac = pct/artifact_fusion_fraction)
 ```
 
 
+```{r}
+
+# No cosmic fusions among the artifact categories, restricted to the primary fusion isoform:
+
+fusion_data %>% filter(is_primary)  %>% 
+    filter(fusion_cluster_att %in% c('expr_microH_RT_artifact?', 'high_counter_evidence', 'high_FAR_microH_bioinf_artifact?'))  %>%
+    filter(cosmic)
+
+
+```
+
+
 
 ```{r}
 # define fusions enriched in "expr_microH_RT_artifact?" category.
