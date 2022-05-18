@@ -12,7 +12,7 @@ library(ggrepel)
 
 Below we examine the contents of fusion clusters including COSMIC enrichment and properties of those COSMIC fusions found in COSMIC-enriched cluster C4.
 
-- used for Figure 4
+- used for Figure 5
 
 
 ```{r}
