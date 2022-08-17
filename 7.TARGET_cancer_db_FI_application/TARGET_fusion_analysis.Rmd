@@ -1,0 +1,343 @@
+---
+title: "TARGET fusion analysis"
+author: "bhaas"
+date: '2022-08-16'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+
+# input data
+
+data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), sep="\t", com='', header=T, stringsAsFactors = F)
+
+sample_info = read.table("../data/TARGETdb.sample_info.tsv", sep="\t", header=T, stringsAsFactors = F)
+
+data = left_join(data, sample_info, by='sample')
+
+
+# define primary fusion
+
+data = data %>% group_by(sample, fusion_name) %>% arrange(desc(FFPM) ) %>% mutate(is_primary = ifelse(row_number() == 1, TRUE, FALSE))
+
+data = data %>% ungroup()
+
+## annotate cosmic entries
+data = data %>% mutate(is_cosmic = grepl("Cosmic", annots))
+
+
+```
+
+
+
+```{r}
+
+# count fusions according to predicted cluster
+
+fusion_counts_by_cluster = data %>% filter(is_primary) %>% group_by(pred_cluster) %>% tally(name='fusion_count')
+
+
+fusion_counts_by_cluster
+
+```
+
+
+```{r}
+
+# count cosmic fusions per cluster 
+
+cosmic_counts_by_cluster = data %>% filter(is_primary) %>% filter(is_cosmic) %>% group_by(pred_cluster) %>% tally(name='cosmic_count')
+
+
+cosmic_counts_by_cluster
+
+```
+
+
+
+```{r}
+
+# combine into single table and examine fraction cosmic fusions per cluster
+
+cosmic_counts_by_cluster = full_join(cosmic_counts_by_cluster, fusion_counts_by_cluster, by='pred_cluster')
+
+cosmic_counts_by_cluster  = cosmic_counts_by_cluster  %>% mutate(frac_cosmic = cosmic_count/fusion_count)
+
+cosmic_counts_by_cluster
+
+```
+
+```{r}
+
+cosmic_counts_by_cluster %>% ggplot(aes(x=pred_cluster, y=frac_cosmic)) + geom_col() +
+  ggtitle("Fraction COSMIC fusions per predicted cluster") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+
+```{r}
+
+# examine types of fusions found in each predicted cluster
+
+fusion_counts_by_cluster = data %>% filter(is_primary) %>% filter(is_cosmic) %>% 
+  group_by(fusion_name, pred_cluster) %>%
+  tally(name='fusion_count') 
+
+fusion_counts_by_cluster  %>%
+  ggplot(aes(x=pred_cluster, y=fusion_count, fill=fusion_name)) + geom_col() +
+  ggtitle("COSMIC fusions in each cluster")
+
+
+```
+
+
+
+
+
+
+
+
+```{r}
+
+# Explore COSMIC fu sions according to high-level categories of clusters
+
+data %>% filter(is_primary) %>% filter(is_cosmic) %>% group_by(fusion_name, fusion_cluster_att) %>% tally(name='fusion_count') %>%
+  ggplot(aes(x=fusion_cluster_att, y=fusion_count, fill=fusion_name)) +
+  geom_col()
+
+```
+
+
+```{r}
+
+data %>% filter(is_primary) %>% filter(is_cosmic) %>% group_by(fusion_name, fusion_cluster_att) %>% tally(name='fusion_count') %>%
+  ggplot(aes(x=fusion_name, y=fusion_count, fill=fusion_cluster_att)) +
+  geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ggtitle("COSMIC fusion cluster assignment classes")
+  
+
+
+```
+
+
+```{r}
+
+cosmic_FAR_data = data %>% filter(is_cosmic & pred_cluster == 4 & is_primary) %>% 
+  rename("5p-FAR" = FAR_left, "3p-FAR" = FAR_right ) %>%
+  gather(key=FAR_type, value=FAR_val, "5p-FAR", "3p-FAR") %>%
+  mutate(FAR_type=factor(FAR_type, levels=c("5p-FAR", "3p-FAR"))) 
+
+
+cosmic_FAR_data %>%
+  ggplot(aes(x=FAR_type, y=FAR_val)) + geom_boxplot() + facet_wrap(~fusion_name, scale='free_y') +
+  ggtitle("5p- and 3p-FAR distributions for TARGET COSMIC C4-pred fusions")
+
+
+```
+
+
+```{r}
+
+
+# statistical significance of COSMIC fusion enrichment
+
+
+cosmic_counts_by_cluster = cosmic_counts_by_cluster %>% mutate(cosmic_count = ifelse(is.na(cosmic_count), 0, cosmic_count))
+
+
+tot_cosmic_fusions = sum(cosmic_counts_by_cluster$cosmic_count)
+tot_noncosmic_fusions = sum(cosmic_counts_by_cluster$fusion_count) - tot_cosmic_fusions
+
+
+run_fishers_exact_test = function(cosmic_count, fusion_count) {
+    
+    message("cosmic_count: ", cosmic_count)
+    message("fusion count: ", fusion_count)
+  
+    non_cosmic_count = fusion_count - cosmic_count
+    confusion_matrix = matrix(c(cosmic_count, non_cosmic_count,
+                                tot_cosmic_fusions - cosmic_count, tot_noncosmic_fusions - non_cosmic_count),
+                              nrow=2, byrow = T)    
+    print(confusion_matrix)
+    
+    f = fisher.test(confusion_matrix, alternative = 'greater')
+    
+    return(f$p.value)
+    
+}
+
+
+cosmic_counts_by_cluster = cosmic_counts_by_cluster  %>% rowwise() %>% mutate(
+  pval = run_fishers_exact_test(
+         cosmic_count, fusion_count)
+)  %>% mutate(negLOGp = -1 * log10(pval))
+
+
+cosmic_counts_by_cluster
+
+```
+
+
+```{r}
+
+
+cosmic_counts_by_cluster %>% ggplot(aes(x=pred_cluster, y=negLOGp)) + geom_col() +
+  ggtitle("TARGET COSMIC fusion enrichment per predicted clusters")
+
+
+```
+
+
+```{r}
+
+# compare cosmic fusions found here vs. those found in TCGA
+
+starF_TCGA_cosmic_fusions = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz"), 
+                                       sep="\t", com='', stringsAsFactors = F, header=T) %>% 
+  filter(cosmic & data_class == "TCGA" & is_primary)
+
+```
+
+
+```{r}
+
+# count cosmic fusions according to sample
+
+TCGA_cosmic_counts = starF_TCGA_cosmic_fusions %>% 
+  select(sample_name, fusion_name) %>% 
+  group_by(fusion_name) %>% 
+  tally(name='cosmic_count') %>% 
+  mutate(data_class = "TCGA")
+
+TCGA_cosmic_counts
+
+```
+
+```{r}
+
+TARGET_cosmic_sample_counts = data %>% filter(is_primary & is_cosmic) %>% select(sample, fusion_name) %>% group_by(fusion_name) %>% tally(name='cosmic_count') %>% mutate(data_class = 'TARGET')
+
+TARGET_cosmic_sample_counts
+
+```
+
+```{r}
+
+cosmic_sample_counts = bind_rows(TARGET_cosmic_sample_counts, TCGA_cosmic_counts)
+
+```
+
+
+
+
+```{r}
+
+
+cosmic_sample_counts %>% ggplot(aes(x=fusion_name, y=cosmic_count, fill=data_class)) + geom_col() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))  + ggtitle("COSMIC fusion sample counts for TARGET and TCGA")
+
+
+```
+
+```{r}
+
+# examine biological variability in fusion prediction according to participants with multiple samples
+
+participants_with_mult_samples = data %>% select(sample, participant) %>% unique() %>% group_by(participant) %>% tally() %>% filter(n >= 2) %>% pull(participant)
+
+
+```
+
+
+```{r}
+
+fusions_for_reproducibility_analysis = data %>% filter(is_primary) %>% filter(participant %in% participants_with_mult_samples) %>%
+  group_by(participant, fusion_name) %>% tally(name='repro_count') %>% filter(repro_count >= 2)
+
+
+fusions_for_reproducibility_analysis = left_join(fusions_for_reproducibility_analysis, data, by=c('participant', 'fusion_name'))
+
+```
+
+
+```{r}
+
+
+fusions_for_reproducibility_analysis = fusions_for_reproducibility_analysis %>% select(participant, sample, fusion_name, pred_cluster, fusion_cluster_att, is_primary, is_cosmic) %>%
+  filter(is_primary) %>%
+  arrange(participant, fusion_name, sample, is_primary)
+
+fusions_for_reproducibility_analysis
+
+```
+
+
+
+```{r}
+
+combined_results = full_join(fusions_for_reproducibility_analysis %>% select(participant, sample, fusion_name, pred_cluster, fusion_cluster_att),
+                             fusions_for_reproducibility_analysis %>% select(participant, sample, fusion_name, pred_cluster, fusion_cluster_att),
+                             by = c('participant', 'fusion_name') ) %>%
+  filter(sample.x != sample.y)
+
+combined_results
+```
+
+
+```{r}
+
+combined_results %>% group_by(pred_cluster.x, pred_cluster.y) %>% tally() 
+
+
+```
+
+
+```{r}
+
+combined_results %>% 
+  group_by(pred_cluster.x, pred_cluster.y) %>% 
+  tally() %>% 
+  ggplot(aes(x=factor(pred_cluster.x), y=n, fill=factor(pred_cluster.y))) + geom_col() +
+  ggtitle("Predicted cluster assignment for matched participant sample fusions")
+
+
+```
+
+```{r}
+
+# examine matched sample fusions according to the high-level categories
+combined_results %>% group_by(fusion_cluster_att.x, fusion_cluster_att.y) %>% tally() 
+
+
+
+```
+
+
+```{r}
+
+combined_results %>% group_by(fusion_cluster_att.x, fusion_cluster_att.y) %>% tally() %>%
+  ggplot(aes(x=fusion_cluster_att.x, y=n, fill=fusion_cluster_att.y)) + geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  ggtitle("Predicted high-level category assignment for matched sample fusions")
+
+
+```
+
+```{r}
+
+
+# examine fractional representation of the above
+combined_results %>% group_by(fusion_cluster_att.x, fusion_cluster_att.y) %>%  tally() %>%
+  group_by(fusion_cluster_att.x) %>% mutate(pct=prop.table(n))  %>%
+  ggplot(aes(x=fusion_cluster_att.x, y=pct, fill=fusion_cluster_att.y)) + geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ggtitle("Predicted high-level category assignment for matched sample fusions")
+
+```
+
+
