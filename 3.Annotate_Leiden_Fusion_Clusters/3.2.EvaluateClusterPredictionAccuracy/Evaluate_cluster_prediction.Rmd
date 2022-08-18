@@ -1,0 +1,450 @@
+---
+title: "D.evaluate_cluster_prediction"
+author: "Brian Haas"
+date: "2/01/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ranger)
+library(cowplot)
+```
+
+```{r}
+
+
+FUSIONS_FILE_CLUSTERS_ASSIGNED = "../../data/FusionInspector.v2.4.0.examine_recurrents.tsv.gz"
+
+```
+
+
+
+```{r}
+
+
+data_orig = read.table(gzfile(FUSIONS_FILE_CLUSTERS_ASSIGNED), header=T, sep="\t", stringsAsFactors = F)
+
+```
+
+
+```{r}
+
+data = data_orig %>% select(annot_splice, consensus_splice, FFPM, left_counter_ffpm, right_counter_ffpm, FAR_left, FAR_right, microh_brkpt_dist, num_microh_near_brkpt)
+
+```
+
+
+```{r}
+
+# add pseudocount and log2 transform
+
+pseudocount = 1
+
+data.scaled = list()
+
+data.scaled$adj_FFPM=log2(data$FFPM + pseudocount)
+data.scaled$adj_left_counter_ffpm = log2(data$left_counter_ffpm + pseudocount)
+data.scaled$adj_right_counter_ffpm = log2(data$right_counter_ffpm + pseudocount)
+data.scaled$adj_FAR_left = log2(data$FAR_left + pseudocount)
+data.scaled$adj_FAR_right = log2(data$FAR_right + pseudocount)
+data.scaled$adj_microh_brkpt_dist = log2(data$microh_brkpt_dist + pseudocount)
+data.scaled$adj_num_microh = log2(data$num_microh_near_brkpt + pseudocount)
+data.scaled$adj_annot_splice = data$annot_splice
+data.scaled$adj_consensus_splice = data$consensus_splice
+
+data.scaled = as.data.frame(data.scaled)
+
+```
+
+
+
+```{r}
+# get mean for each att
+
+colMeans(data.scaled)
+
+```
+
+
+```{r}
+
+#get sd for each att
+
+apply(data.scaled, 2, sd)
+
+
+```
+
+
+```{r}
+
+# scale values according to earlier-defined mean and sd values
+
+
+# center
+data.scaled = data.scaled %>% mutate(adj_annot_splice = adj_annot_splice - 0.8144065,
+                                     adj_consensus_splice = adj_consensus_splice - 0.9149324,
+                                     adj_FFPM = adj_FFPM - 0.1815195,
+                                     adj_left_counter_ffpm = adj_left_counter_ffpm - 1.3516459,
+                                     adj_right_counter_ffpm = adj_right_counter_ffpm - 1.3662279,
+                                     adj_FAR_left = adj_FAR_left - 1.2690494,
+                                     adj_FAR_right = adj_FAR_right - 1.3892456,
+                                     adj_microh_brkpt_dist = adj_microh_brkpt_dist - 9.8476273,
+                                     adj_num_microh = adj_num_microh - 0.2846550)
+
+
+# make z-scores
+
+data.scaled = data.scaled %>% mutate(adj_annot_splice = adj_annot_splice / 0.3887820,
+                                     adj_consensus_splice = adj_consensus_splice / 0.2789849,
+                                     adj_FFPM = adj_FFPM  / 0.3744377,
+                                     adj_left_counter_ffpm = adj_left_counter_ffpm / 2.4123070,
+                                     adj_right_counter_ffpm = adj_right_counter_ffpm / 2.6002049,
+                                     adj_FAR_left = adj_FAR_left / 1.2838213,
+                                     adj_FAR_right = adj_FAR_right / 1.2570087,
+                                     adj_microh_brkpt_dist = adj_microh_brkpt_dist / 2.4569856,
+                                     adj_num_microh = adj_num_microh / 0.9846331)
+
+
+```
+
+
+```{r}
+## rescale so all values are between -2,2
+
+data.scaled[data.scaled < -2] = -2
+data.scaled[data.scaled > 2] = 2
+
+apply(data.scaled, 2, range)
+
+```
+
+
+```{r}
+
+scale_range_min = -2
+scale_range_max = 2
+scale_range_size = scale_range_max - scale_range_min
+
+data.scaled = data.scaled %>% mutate(adj_annot_splice = (adj_annot_splice - -2) / 2.4773718 * scale_range_size + scale_range_min,
+                                     adj_consensus_splice = (adj_consensus_splice - -2) / 2.3049183 * scale_range_size + scale_range_min,
+                                     adj_FFPM = (adj_FFPM - -0.4747742) / 2.4747742 * scale_range_size + scale_range_min,
+                                     adj_left_counter_ffpm = (adj_left_counter_ffpm - -0.5603125) / 2.5603125 * scale_range_size + scale_range_min,
+                                     adj_right_counter_ffpm = (adj_right_counter_ffpm - -0.5254309) / 2.5254309 * scale_range_size + scale_range_min,
+                                     adj_FAR_left = (adj_FAR_left - -0.9884938) / 3.9884938 * scale_range_size + scale_range_min,
+                                     adj_FAR_right = (adj_FAR_right - -1.1052) / 3.1052 * scale_range_size + scale_range_min,
+                                     adj_microh_brkpt_dist = (adj_microh_brkpt_dist - -2) / 3.400183 * scale_range_size + scale_range_min,
+                                     adj_num_microh = (adj_num_microh - -0.2890975) / 2.2890975 * scale_range_size + scale_range_min)
+
+
+
+
+```
+
+
+```{r}
+
+# create data frame that includes variables and the response (leiden cluster prediction)
+
+rangerdata = data.scaled
+rangerdata$leiden = data_orig$leiden
+
+
+```
+
+
+
+# examine pairwise cluster tests
+
+```{r}
+
+if (FALSE) {
+
+FRACTION_TRAIN = 2/3
+
+max_cluster = max(as.numeric(rangerdata$leiden))
+
+all_pairs_oobe = NULL
+
+for (i in seq(max_cluster)) {
+    message("-analyzing cluster i=", i)
+
+    for (j in seq(i + 1, max_cluster)) {
+
+        #message("-analyzing clusters: ", i, " and ", j)
+
+        cluster_pairs_data = rangerdata %>% filter(leiden %in% c(i, j))
+
+        cluster_pairs_data$cluster = as.factor(cluster_pairs_data$leiden)
+
+        train.idx = sample(nrow(cluster_pairs_data), FRACTION_TRAIN * nrow(cluster_pairs_data))
+        clusters.train = cluster_pairs_data[train.idx,]
+        clusters.test = cluster_pairs_data[-train.idx,]
+        rg = ranger(cluster ~ ., data=clusters.train)
+        oobe = rg$prediction.error
+
+        pred = predict(rg, data=clusters.test)
+        t = table(clusters.test$leiden, pred$predictions)
+
+        num_preds = sum(t)
+        num_correct = sum(diag(t))
+        num_wrong = num_preds - num_correct
+
+        fp_rate = num_wrong / num_preds
+
+
+        df = data.frame(i=i, j=j, oobe=oobe, fp_rate=fp_rate)
+        all_pairs_oobe = rbind(all_pairs_oobe, df)
+
+    }
+}
+
+write.table(all_pairs_oobe, file="oobe.tsv", quote=F, sep="\t", row.names=F)
+
+all_pairs_oobe %>% arrange(desc(fp_rate))
+
+message("done")
+
+
+}
+
+```
+
+
+
+# examine general cluster prediction using all cluster types
+
+```{r}
+
+FRACTION_TRAIN = 2/3
+max_cluster = max(as.numeric(rangerdata$leiden))
+
+max_num_fusions_per_category = 300 # avoid class size imbalance  (using median cluster size)
+
+
+prediction_accuracies_df = NULL
+
+
+for (round in 1:5) {
+    message("round: ", round)
+    
+    train_data = NULL
+    test_data = NULL
+
+    srand(round)
+    
+    for (i in seq(max_cluster)) {
+        cluster_data = rangerdata %>% filter(leiden == i)
+        cluster_data$leiden = as.factor(cluster_data$leiden)
+        num_rows_cluster = nrow(cluster_data)
+        
+        num_rows_use = num_rows_cluster
+        if (num_rows_use > max_num_fusions_per_category) {
+            num_rows_use = max_num_fusions_per_category
+        }
+        
+        sampled_indices = sample(1:num_rows_cluster, num_rows_use)
+        sampled_data = cluster_data[sampled_indices,]
+        
+        num_train_indices = round(FRACTION_TRAIN * num_rows_use)
+        train_indices = sample(1:num_rows_use, num_train_indices)
+        train_data = bind_rows(train_data, sampled_data[train_indices,])
+        test_data = bind_rows(test_data, sampled_data[-train_indices,])
+    }
+    
+    rg = ranger(leiden ~ ., data=train_data)
+    oobe = rg$prediction.error
+    
+    pred = predict(rg, data=test_data)
+    t = table(test_data$leiden, pred$predictions)
+    
+    
+    t_df = as.data.frame((t))
+    
+    t_df_pct = t_df %>% mutate(ident_cluster = (Var1 == Var2)) %>% group_by(Var1)  %>% mutate(pct=prop.table(Freq))  %>%
+      mutate(round = round)
+    
+    prediction_accuracies_df = bind_rows(prediction_accuracies_df, t_df_pct)
+    
+    pred_agreement_plot = t_df_pct %>% ggplot(aes(x=Var1, y=pct, color=ident_cluster)) + geom_col() + 
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size=rel(1) )) + 
+      ggtitle(paste0("round: ", round))
+    
+    plot(pred_agreement_plot)
+    
+}
+
+
+
+
+
+```
+
+
+
+```{r}
+
+prediction_accuracies_df_stats = prediction_accuracies_df %>% filter(Var1==Var2) %>% group_by(Var1, Var2) %>% mutate(mean_pct = mean(pct), sd = sd(pct)) %>% 
+  select(Var1, Var2, mean_pct, sd) %>% unique()
+
+prediction_accuracies_df_stats
+```
+
+```{r}
+
+prediction_accuracies_df_stats %>%  ggplot(aes(x=Var1, y=mean_pct)) +  
+  geom_bar(stat="identity", fill="red", 
+           position=position_dodge()) +
+  geom_errorbar(aes(ymin=mean_pct-sd, ymax=mean_pct+sd), width=.2,
+                 position=position_dodge(.9)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size=rel(1) ))
+
+
+```
+
+
+
+## Organize clusters into larger groups based on properties and prediction accuracies.
+
+
+```{r}
+
+## info we need for the plots below
+
+cosmic_subset = data_orig %>% filter(cosmic == TRUE)
+cosmic.primary_isoform = cosmic_subset %>% filter(is_primary)
+
+
+
+p = pheatmap(all_median_vals_df, 
+             cluster_rows=rowclust,
+             cluster_cols=colclust,
+             )
+
+cosmic_counts_per_cluster = cosmic.primary_isoform %>%
+    group_by(fusion_name, leiden) %>% 
+    tally()
+
+cosmic_counts_per_cluster$leiden = factor(cosmic_counts_per_cluster$leiden, levels=rev(p$tree_row$order))
+
+empty_counts_df = data.frame(fusion_name="NA", leiden=factor(seq(max_cluster), levels=rev(p$tree_row$order)), n=0)
+
+cosmic_counts_per_cluster = bind_rows(empty_counts_df, cosmic_counts_per_cluster)
+
+# plot it
+
+#cosmic_sum_counts_per_cluster = cosmic_counts_per_cluster %>% group_by(leiden) %>% summarize(sum_n = sum(n))
+#cosmic_all_iso_counts_per_cluster_plot = cosmic_counts_per_cluster %>% ggplot(aes(x=leiden, y=n, fill=fusion_name)) + geom_col() + coord_flip() + ggtitle("COSMIC primary isoform count")
+
+#plot(cosmic_all_iso_counts_per_cluster_plot)
+
+
+
+all_median_vals_df = NULL
+
+for (cluster_i in seq(max_cluster)) {
+
+    #message("cluster: ", cluster_i)
+    
+    cluster_row_indices = which(rangerdata$leiden == cluster_i)
+    
+    feature_atts = data.scaled[cluster_row_indices,]
+    
+    median_vals = as_tibble(feature_atts) %>% gather() %>% group_by(key) %>% summarize(m=median(value))
+
+    df = data.frame(median_vals$m, row.names=median_vals$key)
+    df = as.data.frame(t(df))
+    df$cluster = cluster_i
+
+    all_median_vals_df = bind_rows(all_median_vals_df, df)
+
+}
+
+
+rownames(all_median_vals_df) = all_median_vals_df$cluster
+
+all_median_vals_df = all_median_vals_df[,!c(colnames(all_median_vals_df)=='cluster')]
+
+
+
+median_vals_pca = prcomp(t(all_median_vals_df))
+rows_d = dist(median_vals_pca$rotation[,1:6])
+rowclust = hclust(as.dist(rows_d), "ward.D")
+
+
+cols_d = dist(t(all_median_vals_df))
+
+colclust = hclust(as.dist(cols_d), "ward.D")
+
+
+```
+
+
+
+
+
+```{r}
+
+library(igraph)
+
+graph_weights = prediction_accuracies_df %>% group_by(Var1, Var2) %>% 
+  mutate(mean_pct = mean(pct)) %>% select(i=Var1, j=Var2, weight=mean_pct)  %>% 
+  filter(weight > 0.01) %>% unique()
+
+prediction_accuracy_graph = graph_from_data_frame(graph_weights, directed=FALSE)
+
+
+g.simplified = simplify(prediction_accuracy_graph)
+g.louvain = cluster_louvain(prediction_accuracy_graph, resolution=1)
+
+plot(g.louvain, 
+     g.simplified, 
+     vertex.size=3, edge.arrow.size = .2)
+```
+
+Examine the earlier heatmaps and cosmic counts in each louvain grouping.
+
+```{r}
+
+
+library(pheatmap)
+plot_heatmap_n_fusion_counts = function(cluster_ids_list) {
+    
+    median_vals_df = all_median_vals_df[rownames(all_median_vals_df) %in% cluster_ids_list,,drop=F]
+    
+
+    if (nrow(median_vals_df) < 2) {
+        median_vals_copy = median_vals_df
+        rownames(median_vals_copy) = c('copy')
+        median_vals_df = bind_rows(median_vals_df, median_vals_copy)
+    }
+    
+    p = pheatmap(median_vals_df, silent=T, cluster_cols=colclust)
+    
+    local_cosmic_all_iso_counts_per_cluster_plot = cosmic_counts_per_cluster %>% 
+        filter(leiden %in% cluster_ids_list) %>% 
+        ggplot(aes(x=factor(leiden, levels=p$tree_row$labels[rev(p$tree_row$order)]), y=n, fill=fusion_name)) + geom_col() + coord_flip() + 
+        ggtitle("COSMIC primary isoform count") +
+         theme(legend.position = "none")
+    
+    #plot(local_cosmic_all_iso_counts_per_cluster_plot)
+    
+    pg = plot_grid(p[[4]], local_cosmic_all_iso_counts_per_cluster_plot, nrow=1, rel_widths=c(1,1))
+    
+    plot(pg)
+}
+
+for (i in 1:length(g.louvain)) {
+    clustered_ids = g.louvain[[i]]
+    if (length(clustered_ids) > 1) {
+        plot_heatmap_n_fusion_counts(clustered_ids)
+    }
+}
+```
+
+
+
+
+
