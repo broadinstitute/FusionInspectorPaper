@@ -1,0 +1,248 @@
+---
+title: "umap_fusion_cluster_attribute_representation.Rmd"
+author: "bhaas"
+date: '2022-08-19'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggrepel)
+library(cowplot)
+```
+
+
+```{r}
+
+FUSIONS_FILE_CLUSTERS_ASSIGNED = "../../data/FusionInspector.v2.4.0.examine_recurrents.tsv.gz"
+data = read.table(gzfile(FUSIONS_FILE_CLUSTERS_ASSIGNED), header=T, sep="\t", stringsAsFactors = F)
+```
+
+
+```{r}
+# get the scaled attribute values from earlier.
+scaled_att_vals = read.table(gzfile("../3.2.EvaluateClusterPredictionAccuracy/fusion_atts_scaled_values.tsv.gz"), 
+                             header=T, com='', sep="\t", stringsAsFactors = F)
+```
+
+```{r}
+# merge with original data.
+
+data = bind_cols(data, scaled_att_vals)
+
+```
+
+
+```{r}
+
+# umap plot, color by cluster id
+
+umap.layout.cent = data %>% select(umap1, umap2, leiden) %>% group_by(leiden) %>% summarize_all(mean)
+
+leiden_umap = data %>% ggplot(aes(x=umap1, y=umap2, color=factor(leiden))) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) + 
+        theme_bw() + 
+        geom_text(data=umap.layout.cent, aes(label = leiden), size=3 , color='black') +
+  ggtitle("Leiden clusters of fusions") + theme(legend.position = "none")
+  
+
+
+leiden_umap
+
+```
+
+
+
+```{r}
+
+by_TCGA_GTEx_representation_plot = data %>% select(umap1, umap2, data_class, leiden) %>%
+  ggplot(aes(x=umap1, y=umap2, color=data_class ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() +
+  ggtitle("TCGA and GTEx representation") + theme(legend.position = "none")
+#+ 
+#       geom_label_repel(data=umap.layout.cent, aes(label = leiden), size=3 ) + 
+#                             guides(colour = FALSE)
+
+
+by_TCGA_GTEx_representation_plot
+
+```
+
+
+```{r}
+
+# examine fractional representation among clusters
+
+cluster_fusion_counts = data %>% group_by(leiden) %>% tally(name='cluster_fusion_count')
+
+tcga_gtex_fusion_counts = data  %>% group_by(leiden, data_class) %>% tally(name='data_class_fusion_count')
+
+cluster_fusion_counts = left_join(cluster_fusion_counts, tcga_gtex_fusion_counts, by='leiden')
+
+cluster_fusion_counts = cluster_fusion_counts %>% mutate(frac=data_class_fusion_count/cluster_fusion_count)
+
+
+fractional_cluster_rep_plot = cluster_fusion_counts %>% ggplot(aes(x=leiden, y=frac, fill=data_class)) + geom_col() +
+  ggtitle("Fractional representation of clusters by data source")
+
+
+fractional_cluster_rep_plot
+```
+
+All clusters have representation by both GTEx and TCGA, although there are a few clusters that appear particularly enriched for GTEx fusions.
+
+```{r}
+
+# get mean and variance for TCGA fractioanl representation of clusters
+
+cluster_fusion_counts %>% filter(data_class=="TCGA") %>% summarise(m=mean(frac), v=var(frac))
+```
+# Color umap by fusion attributes
+
+[1] "adj_FFPM"               "adj_left_counter_ffpm"  "adj_right_counter_ffpm" "adj_FAR_left"          
+[5] "adj_FAR_right"          "adj_microh_brkpt_dist"  "adj_num_microh"         "adj_annot_splice"      
+[9] "adj_consensus_splice" 
+
+
+```{r}
+
+by_FFPM_plot = data %>% 
+  ggplot(aes(x=umap1, y=umap2, color=adj_FFPM ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() + ggtitle("FFPM")  + theme(legend.position = "none")
+
+by_FFPM_plot
+
+
+```
+
+
+```{r}
+
+by_left_counter_ffpm_plot = data %>% 
+  ggplot(aes(x=umap1, y=umap2, color=adj_left_counter_ffpm ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() + ggtitle("left_counter_FFPM")  + theme(legend.position = "none")
+
+by_left_counter_ffpm_plot
+
+
+```
+
+```{r}
+
+by_right_counter_ffpm_plot = data %>% 
+  ggplot(aes(x=umap1, y=umap2, color=adj_right_counter_ffpm ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() + ggtitle("right_counter_FFPM")  + theme(legend.position = "none")
+
+
+by_right_counter_ffpm_plot
+
+```
+
+
+
+
+```{r}
+
+by_FAR_left_plot = data %>% 
+  ggplot(aes(x=umap1, y=umap2, color=adj_FAR_left ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() + ggtitle("FAR_left")  + theme(legend.position = "none")
+
+
+by_FAR_left_plot
+
+```
+
+
+```{r}
+
+by_FAR_right_plot = data %>% 
+  ggplot(aes(x=umap1, y=umap2, color=adj_FAR_right ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() + ggtitle("FAR_right")  + theme(legend.position = "none")
+
+
+by_FAR_right_plot
+
+```
+
+
+```{r}
+
+by_microh_brkpt_dist_plot = data %>% 
+  ggplot(aes(x=umap1, y=umap2, color=-adj_microh_brkpt_dist ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() + ggtitle("-1 * microh_brkpt_dist")  + theme(legend.position = "none")
+
+by_microh_brkpt_dist_plot
+
+
+```
+
+
+```{r}
+
+by_num_microh_plot = data %>% 
+  ggplot(aes(x=umap1, y=umap2, color=adj_num_microh ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() + ggtitle("num_microh")  + theme(legend.position = "none")
+
+
+by_num_microh_plot
+
+```
+
+
+
+```{r}
+
+by_annot_splice_plot = data %>% 
+  ggplot(aes(x=umap1, y=umap2, color=adj_annot_splice ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() + ggtitle("annot_splice")  + theme(legend.position = "none")
+
+by_annot_splice_plot
+
+```
+
+
+```{r}
+
+by_consensus_splice_plot = data %>% 
+  ggplot(aes(x=umap1, y=umap2, color=adj_consensus_splice ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() + ggtitle("consensus_splice")  + theme(legend.position = "none")
+
+
+by_consensus_splice_plot
+
+
+```
+
+
+
+```{r}
+
+#Make summary figure.
+
+summary_fig = plot_grid(leiden_umap, by_TCGA_GTEx_representation_plot, fractional_cluster_rep_plot, by_FFPM_plot, 
+                        by_left_counter_ffpm_plot, by_right_counter_ffpm_plot,
+                        by_FAR_left_plot, by_FAR_right_plot,
+                        by_microh_brkpt_dist_plot, by_num_microh_plot,
+                        by_annot_splice_plot, by_consensus_splice_plot,
+                        ncol=3)  
+
+ggsave(summary_fig, file='summary_fig.png' , width=17, height=17)
+
+
+```
+
+
+
+
+
