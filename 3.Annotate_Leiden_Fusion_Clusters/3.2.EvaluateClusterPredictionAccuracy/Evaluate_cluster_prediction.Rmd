@@ -439,6 +439,10 @@ for (i in 1:length(g.louvain)) {
 ```
 
 
+```{r}
 
+save( all_median_vals_df, colclust, plot_heatmap_n_fusion_counts, cosmic_counts_per_cluster, file="share_data.Rdata")
+
+```
 
 
