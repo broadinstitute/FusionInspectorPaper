@@ -146,6 +146,14 @@ data.scaled = data.scaled %>% mutate(adj_annot_splice = (adj_annot_splice - -2) 
 
 ```{r}
 
+write.table(data.scaled, file="fusion_atts_scaled_values.tsv", row.names=F, sep="\t", quote=F)
+
+
+```
+
+
+```{r}
+
 # create data frame that includes variables and the response (leiden cluster prediction)
 
 rangerdata = data.scaled
@@ -153,6 +161,8 @@ rangerdata$leiden = data_orig$leiden
 
 
 ```
+
+
 
 
 
