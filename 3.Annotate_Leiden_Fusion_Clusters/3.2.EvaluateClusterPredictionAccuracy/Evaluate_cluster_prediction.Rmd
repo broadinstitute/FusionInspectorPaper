@@ -233,7 +233,7 @@ for (round in 1:5) {
     train_data = NULL
     test_data = NULL
 
-    srand(round)
+    set.seed(round)
     
     for (i in seq(max_cluster)) {
         cluster_data = rangerdata %>% filter(leiden == i)
@@ -312,33 +312,9 @@ prediction_accuracies_df_stats %>%  ggplot(aes(x=Var1, y=mean_pct)) +
 ```{r}
 
 ## info we need for the plots below
-
+library(pheatmap)
 cosmic_subset = data_orig %>% filter(cosmic == TRUE)
 cosmic.primary_isoform = cosmic_subset %>% filter(is_primary)
-
-
-
-p = pheatmap(all_median_vals_df, 
-             cluster_rows=rowclust,
-             cluster_cols=colclust,
-             )
-
-cosmic_counts_per_cluster = cosmic.primary_isoform %>%
-    group_by(fusion_name, leiden) %>% 
-    tally()
-
-cosmic_counts_per_cluster$leiden = factor(cosmic_counts_per_cluster$leiden, levels=rev(p$tree_row$order))
-
-empty_counts_df = data.frame(fusion_name="NA", leiden=factor(seq(max_cluster), levels=rev(p$tree_row$order)), n=0)
-
-cosmic_counts_per_cluster = bind_rows(empty_counts_df, cosmic_counts_per_cluster)
-
-# plot it
-
-#cosmic_sum_counts_per_cluster = cosmic_counts_per_cluster %>% group_by(leiden) %>% summarize(sum_n = sum(n))
-#cosmic_all_iso_counts_per_cluster_plot = cosmic_counts_per_cluster %>% ggplot(aes(x=leiden, y=n, fill=fusion_name)) + geom_col() + coord_flip() + ggtitle("COSMIC primary isoform count")
-
-#plot(cosmic_all_iso_counts_per_cluster_plot)
 
 
 
@@ -368,7 +344,6 @@ rownames(all_median_vals_df) = all_median_vals_df$cluster
 all_median_vals_df = all_median_vals_df[,!c(colnames(all_median_vals_df)=='cluster')]
 
 
-
 median_vals_pca = prcomp(t(all_median_vals_df))
 rows_d = dist(median_vals_pca$rotation[,1:6])
 rowclust = hclust(as.dist(rows_d), "ward.D")
@@ -377,6 +352,25 @@ rowclust = hclust(as.dist(rows_d), "ward.D")
 cols_d = dist(t(all_median_vals_df))
 
 colclust = hclust(as.dist(cols_d), "ward.D")
+
+```
+
+
+```{r}
+p = pheatmap(all_median_vals_df, 
+             cluster_rows=rowclust,
+             cluster_cols=colclust,
+             )
+
+cosmic_counts_per_cluster = cosmic.primary_isoform %>%
+    group_by(fusion_name, leiden) %>% 
+    tally()
+
+cosmic_counts_per_cluster$leiden = factor(cosmic_counts_per_cluster$leiden, levels=rev(p$tree_row$order))
+
+empty_counts_df = data.frame(fusion_name="NA", leiden=factor(seq(max_cluster), levels=rev(p$tree_row$order)), n=0)
+
+cosmic_counts_per_cluster = bind_rows(empty_counts_df, cosmic_counts_per_cluster)
 
 
 ```
