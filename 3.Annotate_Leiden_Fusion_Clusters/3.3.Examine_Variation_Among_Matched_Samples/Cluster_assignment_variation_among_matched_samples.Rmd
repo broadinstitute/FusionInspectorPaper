@@ -17,6 +17,8 @@ library(igraph)
 ```{r}
 data = read.table(gzfile("../../data/FusionInspector.v2.4.0.examine_recurrents.tsv.gz"), header=T, com='', sep="\t", stringsAsFactors = F)
 
+data = data %>% mutate(fusion_variant = paste(fusion_name, LeftBreakpoint, RightBreakpoint))
+
 ```
 
 # examine TCGA
@@ -32,11 +34,15 @@ tcga_data$participant = sapply(tcga_data$sample_name, function(x) { vals = str_s
 
 ```{r}
 # get those fusions that are in matched samples
-tcga_samples_with_matched_fusions = tcga_data %>% filter(is_primary) %>% group_by(participant, fusion_name) %>% tally() %>% filter(n>1)
+tcga_samples_with_matched_fusions = tcga_data %>%  group_by(participant, fusion_variant) %>% tally() %>% filter(n>1)
 
-tcga_data_matched_fusions = left_join(tcga_samples_with_matched_fusions %>% select(participant, fusion_name),
-                                      tcga_data %>% filter(is_primary),
-                                      by=c('participant', 'fusion_name'))
+tcga_data_matched_fusions = left_join(tcga_samples_with_matched_fusions %>% select(participant, fusion_variant),
+                                      tcga_data,
+                                      by=c('participant', 'fusion_variant'))
+
+
+
+
 
 ```
 
@@ -44,8 +50,20 @@ tcga_data_matched_fusions = left_join(tcga_samples_with_matched_fusions %>% sele
 
 ```{r}
 
-tcga_data_matched_fusions %>% select(participant, fusion_name, type, leiden, fusion_cluster_att)
+tcga_data_matched_fusions %>% select(participant, fusion_variant, type, leiden, fusion_cluster_att)
 
+
+```
+
+
+```{r}
+
+tcga_data_matched_fusions %>% select(participant, fusion_variant, type, leiden, fusion_cluster_att) %>%
+  group_by(participant, fusion_variant, fusion_cluster_att) %>%
+  tally() %>%
+  ggplot(aes(x=fusion_variant, y=n, fill=fusion_cluster_att)) + geom_col() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  
 
 ```
 
@@ -65,11 +83,11 @@ gtex_data$participant = sapply(gtex_data$sample_name, function(x) { vals = str_s
 
 ```{r}
 
-gtex_samples_with_matched_fusions = gtex_data %>% filter(is_primary) %>% group_by(participant, fusion_name) %>% tally() %>% filter(n>1)
+gtex_samples_with_matched_fusions = gtex_data %>% group_by(participant, fusion_variant) %>% tally() %>% filter(n>1)
 
-gtex_data_matched_fusions = left_join(gtex_samples_with_matched_fusions %>% select(participant, fusion_name),
-                                      gtex_data %>% filter(is_primary),
-                                      by=c('participant', 'fusion_name'))
+gtex_data_matched_fusions = left_join(gtex_samples_with_matched_fusions %>% select(participant, fusion_variant),
+                                      gtex_data,
+                                      by=c('participant', 'fusion_variant'))
 
 
 ```
@@ -79,15 +97,15 @@ gtex_data_matched_fusions = left_join(gtex_samples_with_matched_fusions %>% sele
 ```{r}
 
 
-gtex_data_matched_fusions %>% select(participant, sample_name, fusion_name, leiden, fusion_cluster_att)
+gtex_data_matched_fusions %>% select(participant, sample_name, fusion_variant, leiden, fusion_cluster_att)
 
 ```
 
 ```{r}
 
-combined_results = full_join(gtex_data_matched_fusions %>% select(participant, sample_name, fusion_name, leiden, fusion_cluster_att),
-                             gtex_data_matched_fusions %>% select(participant, sample_name, fusion_name, leiden, fusion_cluster_att),
-                             by = c('participant', 'fusion_name') ) %>%
+combined_results = full_join(gtex_data_matched_fusions %>% select(participant, sample_name, fusion_variant, leiden, fusion_cluster_att),
+                             gtex_data_matched_fusions %>% select(participant, sample_name, fusion_variant, leiden, fusion_cluster_att),
+                             by = c('participant', 'fusion_variant') ) %>%
   filter(sample_name.x != sample_name.y)
 
 combined_results
