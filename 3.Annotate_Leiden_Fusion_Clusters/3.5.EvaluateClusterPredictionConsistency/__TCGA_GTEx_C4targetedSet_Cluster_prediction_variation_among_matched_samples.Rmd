@@ -126,18 +126,75 @@ data_matched_fusions = bind_rows(tcga_data_matched_fusions, gtex_data_matched_fu
 ```
 
 
+
+
+
 ```{r}
+
+#  check reproducibility for cluster-level predictions
+
+data_matched_fusions %>% group_by(participant, fusion_variant, pred_cluster) %>% 
+  tally() %>% mutate(agree = (n>1)) %>%
+  ggplot(aes(x=factor(pred_cluster), y=n, fill=agree)) + geom_col()
+
+
+```
+
+
+```{r}
+
+#  check reproducibility for cluster-level predictions
+
+data_matched_fusions %>% group_by(participant, fusion_variant, pred_cluster) %>% tally() %>% mutate(agree = (n>1)) %>%
+  group_by(pred_cluster, agree) %>% summarize(sum_agree = sum(n)) %>%
+   mutate(pct=prop.table(sum_agree))  %>%
+  ggplot(aes(x=factor(pred_cluster), y=pct, fill=agree)) + geom_col()
+
+
+```
+
+
+
+
+```{r}
+
+#  check reproducibility for cluster annotation-level predictions
+
+data_matched_fusions %>% mutate(fusion_cluster_att = ifelse(grepl("artifact", fusion_cluster_att), "artifact", fusion_cluster_att) ) %>%
+group_by(participant, fusion_variant, fusion_cluster_att) %>% tally() %>% mutate(agree = (n>1)) %>%
+  ggplot(aes(x=fusion_cluster_att, y=n, fill=agree)) + geom_col()
+
+```
+
+
+```{r}
+
+data_matched_fusions %>% mutate(fusion_cluster_att = ifelse(grepl("artifact", fusion_cluster_att), "artifact", fusion_cluster_att) ) %>%
+group_by(participant, fusion_variant, fusion_cluster_att) %>% tally() %>% mutate(agree = (n>1)) %>%
+  group_by(fusion_cluster_att, agree) %>% summarize(sum_agree = sum(n)) %>%
+   mutate(pct=prop.table(sum_agree))  %>%
+  ggplot(aes(x=fusion_cluster_att, y=pct, fill=agree)) + geom_col()
+
+
+```
+
+
+
+
+
+
+
+```{r}
+
+
+library(igraph)
 
 combined_results = full_join(data_matched_fusions %>% select(participant, sample_name, fusion_variant, pred_cluster, fusion_cluster_att),
                              data_matched_fusions %>% select(participant, sample_name, fusion_variant, pred_cluster, fusion_cluster_att),
                              by = c('participant', 'fusion_variant') ) %>%
   filter(sample_name.x != sample_name.y)
 
-combined_results
 
-```
-
-```{r}
 
 combined_results %>% group_by(pred_cluster.x, pred_cluster.y) %>% tally() 
 
@@ -201,7 +258,7 @@ consistency_stats %>% ggplot(aes(x=pred_cluster.x, y=pct, color=ident_cluster)) 
 
 ```{r}
 
-library(igraph)
+
 
 graph_weights = consistency_stats %>%  select(i=pred_cluster.x, j=pred_cluster.y, weight=pct)  %>% 
   filter(weight > 0.01) %>% unique()
@@ -248,15 +305,6 @@ artif_fusion_variants
 ```
 
 
-```{r}
-
-# count tissue representation
-
-artif_fusion_variants %>% ggplot(aes(x=tissue_type, y=n)) + geom_col()
-
-
-```
-
 
 
 ```{r}
@@ -270,13 +318,4 @@ artif_fusion_variants %>% group_by(fusion_cluster_att) %>% tally() %>% ggplot(ae
 
 ```
 
-
-```{r}
-
-
-
-
-
-```
-
-
+Artifact fusion variants are mostly consistent in their annotation as artifacts when found among any samples in which they occur. 

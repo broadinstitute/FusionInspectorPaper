@@ -168,7 +168,7 @@ combined_results %>% group_by(fusion_cluster_att.x, fusion_cluster_att.y) %>%  t
 consistency_stats = combined_results %>% select(leiden.x, leiden.y) %>% group_by(leiden.x, leiden.y) %>% tally() %>%
   group_by(leiden.x) %>% mutate(pct=prop.table(n)) %>% mutate(ident_cluster = (leiden.x==leiden.y))
 
-consistency_stats %>% ggplot(aes(x=leiden.x, y=pct, color=ident_cluster)) + geom_col() + 
+consistency_stats %>% ggplot(aes(x=factor(leiden.x), y=pct, color=ident_cluster)) + geom_col() + 
       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size=rel(1) )) + 
   ggtitle("Cluster assignment for participant matched diff sample fusion pairs")
 
