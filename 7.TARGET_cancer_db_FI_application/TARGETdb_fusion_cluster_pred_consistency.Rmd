@@ -13,7 +13,7 @@ library(tidyverse)
 ```{r}
 
 
-data = read.table("../../data/FusionInspector.v2.4.0.TARGET.tsv.gz", sep="\t", com='', header=T, stringsAsFactors = F)
+data = read.table("../data/FusionInspector.v2.4.0.TARGET.tsv.gz", sep="\t", com='', header=T, stringsAsFactors = F)
 
 data = data %>% group_by(sample, fusion_name) %>% arrange(desc(FFPM) ) %>% mutate(is_primary = ifelse(row_number() == 1, TRUE, FALSE))
 
@@ -29,7 +29,7 @@ data = data %>% mutate(is_cosmic = grepl("Cosmic", annots))
 
 ```{r}
 
-sample_info = read.table("../../data/TARGETdb.sample_info.tsv", header=T, sep="\t", stringsAsFactors = F)
+sample_info = read.table("../data/TARGETdb.sample_info.tsv", header=T, sep="\t", stringsAsFactors = F)
 
 ```
 
@@ -183,7 +183,7 @@ plot(g.louvain,
 
 ```{r}
 
-load("../3.2.EvaluateClusterPredictionAccuracy/share_data.Rdata")
+load("../3.Annotate_Leiden_Fusion_Clusters/3.2.EvaluateClusterPredictionAccuracy/share_data.Rdata")
 
 for (i in 1:length(g.louvain)) {
     clustered_ids = g.louvain[[i]]
