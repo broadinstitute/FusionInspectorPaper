@@ -1,41 +1,23 @@
 ---
-title: "TARGET fusion analysis"
+title: "examine_biorep_cluster_pred_consistency"
 author: "bhaas"
-date: '2022-08-16'
+date: '2022-08-25'
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(pheatmap)
+library(cowplot)
 ```
+
 
 ```{r}
 
+data = read.table(gzfile("../../data/FusionInspector.v2.4.0.TCGA_bioreps.tsv.gz"), header=T, sep="\t", stringsAsFactors = F, com='') %>%
+  rename(sample = X.sample, fusion_name = X.FusionName)
 
-data = read.table("../data/FusionInspector.v2.4.0.TARGET.tsv.gz", sep="\t", com='', header=T, stringsAsFactors = F)
-
-data = data %>% group_by(sample, fusion_name) %>% arrange(desc(FFPM) ) %>% mutate(is_primary = ifelse(row_number() == 1, TRUE, FALSE))
-
-data = data %>% ungroup()
-
-## annotate cosmic entries
-data = data %>% mutate(is_cosmic = grepl("Cosmic", annots))
-
-
-```
-
-# Examine prediction consistency among same participant samples.
-
-```{r}
-
-sample_info = read.table("../data/TARGETdb.sample_info.tsv", header=T, sep="\t", stringsAsFactors = F)
-
-```
-
-```{r}
-
-data = left_join(data, sample_info, by='sample')
 
 ```
 
@@ -44,6 +26,15 @@ data = left_join(data, sample_info, by='sample')
 data = data %>% mutate(fusion_variant = paste(fusion_name, LeftBreakpoint, RightBreakpoint))
 
 ```
+
+
+```{r}
+
+
+data$participant = sapply(data$sample, function(x) { vals = str_split(x, "-")[[1]]; paste(vals[c(1,2,3)], collapse ="-") })
+
+```
+
 
 
 ```{r}
@@ -183,7 +174,7 @@ plot(g.louvain,
 
 ```{r}
 
-load("../3.Annotate_Leiden_Fusion_Clusters/3.2.EvaluateClusterPredictionAccuracy/share_data.Rdata")
+load("~/GITHUB/CTAT_FUSIONS/FusionInspectorPaper/3.Annotate_Leiden_Fusion_Clusters/3.2.EvaluateClusterPredictionAccuracy/share_data.Rdata")
 
 for (i in 1:length(g.louvain)) {
     clustered_ids = g.louvain[[i]]
@@ -193,6 +184,7 @@ for (i in 1:length(g.louvain)) {
 }
 
 ```
+
 
 
 
