@@ -34,8 +34,8 @@ my %fusion_prog_renaming = ('nFuse' => "nFuse-v0.2.1",
                             "ChimeraScan" => "ChimeraScan-v0.4.5",
                             "TrinityFusion-D" => "TrinityFusion-D-v0.2.0",
                             "FusionHunter" => "FusionHunter-v1.4",
-                            "Arriba" => "Arriba-v1.1.0",
-                            "ARRIBA_hc" => "ARRIBA_hc-v1.1.0",
+                            "ARRIBA" => "Arriba-v1.1.0",
+                            "ARRIBA_hc" => "Arriba_hc-v1.1.0",
                             "TopHat-Fusion" => "TopHat-Fusion v2.0.10-v2.0.10",
                             "STAR_FUSION_v1.5" => "STAR-Fusion-v1.5",
                             "FUSION_CATCHER_V0994e" => "FusionCatcher-v0994e",
@@ -57,6 +57,7 @@ my %fusion_prog_renaming = ('nFuse' => "nFuse-v0.2.1",
                             "TrinityFusion-UC" => "TrinityFusion-UC-v0.2.0",
                             "ChimeraScan" => "ChimeraScan-v0.4.5",
                             "TrinityFusion-D" => "TrinityFusion-D-v0.2.0",
+                            "FusionInspector" => "FusionInspector-v2.4.0",
     );
 
 
@@ -91,6 +92,9 @@ foreach my $sample (sort keys %data) {
                 $prog = $fusion_prog_renaming{$prog};
             }
             my $fusion_name = $fusion->{fusion};
+
+            $fusion_name =~ s/--/::/; 
+            
             my $J = $fusion->{J};
             my $S = $fusion->{S};
 
