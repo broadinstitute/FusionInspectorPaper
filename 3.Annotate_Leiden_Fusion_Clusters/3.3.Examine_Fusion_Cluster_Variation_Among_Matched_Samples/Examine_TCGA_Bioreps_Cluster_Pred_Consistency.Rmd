@@ -132,7 +132,8 @@ combined_results %>% group_by(fusion_cluster_att.x, fusion_cluster_att.y) %>% ta
 combined_results %>% group_by(fusion_cluster_att.x, fusion_cluster_att.y) %>%  tally() %>%
   group_by(fusion_cluster_att.x) %>% mutate(pct=prop.table(n))  %>%
   ggplot(aes(x=fusion_cluster_att.x, y=pct, fill=fusion_cluster_att.y)) + geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  ggtitle("High-level category assignment for matched participant diff sample fusions")
+  ggtitle("High-level category comparison for TCGA biological replicates.") +
+  xlab("Fusion cluster attribute") + ylab("Fraction of assignments")
 
 ```
 
@@ -143,9 +144,19 @@ combined_results %>% group_by(fusion_cluster_att.x, fusion_cluster_att.y) %>%  t
 consistency_stats = combined_results %>% select(pred_cluster.x, pred_cluster.y) %>% group_by(pred_cluster.x, pred_cluster.y) %>% tally() %>%
   group_by(pred_cluster.x) %>% mutate(pct=prop.table(n)) %>% mutate(ident_cluster = (pred_cluster.x==pred_cluster.y))
 
+consistency_stats
+
+```
+
+
+
+```{r}
+
+
 consistency_stats %>% ggplot(aes(x=factor(pred_cluster.x), y=pct, color=ident_cluster)) + geom_col() + 
       theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size=rel(1) )) + 
-  ggtitle("Cluster assignment for participant matched diff sample fusion pairs")
+  ggtitle("Cluster assignment for TCGA biological replicate fusion variants") +
+  xlab("Fraction assigned to cluster") + ylab("Fusion Cluster")
 
 ```
 

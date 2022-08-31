@@ -309,7 +309,9 @@ prediction_accuracies_df_stats %>%  ggplot(aes(x=Var1, y=mean_pct)) +
            position=position_dodge()) +
   geom_errorbar(aes(ymin=mean_pct-sd, ymax=mean_pct+sd), width=.2,
                  position=position_dodge(.9)) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size=rel(1) ))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size=rel(1) )) +
+  xlab("Fusion Cluster") +
+  ylab("Cluster Prediction Accuracy")
 
 
 ```
