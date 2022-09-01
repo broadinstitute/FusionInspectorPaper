@@ -107,6 +107,12 @@ fusion_annot_class_stats_gathered %>%
 
 ```{r}
 
+write.table(fusion_annot_class_stats_gathered, file="fusion_annot_class_stats_gathered.tsv", quote=F, sep="\t", row.names = F)
+
+```
+
+```{r}
+
 
 
 

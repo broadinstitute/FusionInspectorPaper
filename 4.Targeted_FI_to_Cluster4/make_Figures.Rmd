@@ -1,0 +1,43 @@
+---
+title: "C4_targeted_FI"
+author: "Brian Haas"
+date: "2/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(cowplot)
+```
+
+
+** Run C4_targeted_FI.Rmd before running this to generate the main figs **
+
+```{r}
+
+load("fusion_data_for_main_figs.Rdata")
+```
+
+
+```{r}
+
+source("Rlib_figs/fusion_plotting_routines.R")
+
+pg = plot_ranked_fusions(fusions_ranked_by_logTN)
+
+plot(pg)
+
+ggsave("main_fig.png", pg, height=12, width=8)
+ggsave("main_fig.pdf", pg, height=12, width=8)
+
+```
+
+
+```{r}
+
+source("Rlib_figs/fusion_plotting_routines.R")
+batch_ranked_fusion_plots(fusions_ranked_by_logTN, imgdir="batched_fusions_imgs")
+
+```
+
