@@ -7,8 +7,11 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
+
 library(extrafont)
+library(svglite)
+library(plyr)
+library(tidyverse)
 ```
 
 # Examining preponderance of fusions in tumors and normal tissues
@@ -17,6 +20,10 @@ Inputs: STAR-Fusion predictions across TCGA and GTEx
 
 ```{r}
 data = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+
+data$fusion_name = str_replace(data$fusion_name, "--", "::")
+
 
 data = data %>% mutate(dataclassTN = paste0(data_class, "-", tumor_or_normal))
 
@@ -51,7 +58,7 @@ data = data %>% filter(is_primary)
 
 
 # require reference splicing
-data = data %>% filter(SpliceType == "ONLY_REF_SPLICE")
+# data = data %>% filter(SpliceType == "ONLY_REF_SPLICE")
 
 
 #Count numbers of samples post basic filtering
@@ -151,7 +158,8 @@ for (min_ffpm_use in min_ffpms) {
     p = median_counts_min_ffpm %>%
         ggplot(aes(x = dataclassTN, y=median_fusion_count)) + 
         geom_point(position = position_jitter(w = 0.1, h = 0)) +
-        ggtitle(paste("median fusion counts/sample with min FFPM=", min_ffpm_use))
+        ggtitle(paste("median fusion counts/sample with min FFPM=", min_ffpm_use)) +
+        theme_bw()
     
     
     GTEx_normal_counts = median_counts_min_ffpm %>% filter(dataclassTN == "GTEx-normal") %>% pull(median_fusion_count)
@@ -327,7 +335,7 @@ Below we explore the distribution of fusion expression levels according to the c
 ```{r}
 
 data2 = data %>% mutate(dataclass2 = dataclassTN) %>% 
-    mutate(dataclass2 = ifelse(grepl("Cosmic",Annots), "Cosmic", dataclass2))
+    mutate(dataclass2 = ifelse(cosmic, "Cosmic", dataclass2))
 
 cosmic_fusion_FFPM = data2 %>% filter(dataclass2 == "Cosmic") %>% pull(FFPM)
 GTEx_normal_FFPM = data2 %>% filter(dataclassTN == "GTEx-normal") %>% pull(FFPM)
@@ -474,16 +482,20 @@ Examine distribution of FFPM for cosmic fusions
 ```{r}
 
 
+
 p = data2 %>% filter(dataclass2 == "Cosmic") %>% 
     ggplot(aes(x=reorder(fusion_name, FFPM, FUN = median), y=FFPM)) + 
     geom_boxplot() +
+    theme_bw() + 
+    theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
      theme(axis.text.x=element_text(angle = 90, hjust = 0, size=rel(0.7))) + 
     scale_y_continuous(trans='log2') + 
     #ggtitle("Cosmic Fusion Expression Distribution") +
     xlab("COSMIC Fusion") +
     theme(legend.title = element_text(size = rel(0.7)),
          legend.text  = element_text(size = rel(0.7)),
-         text=element_text(family="Times New Roman"))
+         text=element_text(family="Times New Roman")) 
 
 plot(p)
 
@@ -491,6 +503,12 @@ ggsave("cosmic_ffpm_dist.svg", p, width=7.65, height=5.1)
 
 ```
 
+```{r}
+
+ data2 %>% filter(dataclass2 == "Cosmic") %>% select (fusion_name) %>% unique() %>% nrow()
+
+
+```
 
 
 
