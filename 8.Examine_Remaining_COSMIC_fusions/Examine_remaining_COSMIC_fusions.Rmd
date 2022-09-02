@@ -1,0 +1,136 @@
+---
+title: "Examine remaining COSMIC fusions"
+author: "bhaas"
+date: '2022-09-02'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r}
+# define the COSMIC fusions found in our initial STAR-Fusion survey:
+
+starF_COSMIC_data = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.COSMIC.tsv"), header=T, sep="\t", stringsAsFactors = F)
+
+starF_COSMIC_fusions = starF_COSMIC_data %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
+
+```
+
+```{r}
+
+# Get the list of 236 fusions we surveyed for supervised fusion analysis of C4
+
+C4_targeted_fusions = read.table("../data/FusionInspector.v2.4.0.C4_targeted_fusions.fusion_targets", header=F, stringsAsFactors = F)[,1]
+
+
+C4_targeted_fusions_in_COSMIC = intersect(C4_targeted_fusions, starF_COSMIC_fusions)  # 31 COSMIC fusions targeted here.
+
+```
+
+
+```{r}
+
+# See which COSMIC fusions were not explored earlier:
+
+missing_COSMIC_fusions = setdiff(starF_COSMIC_fusions, C4_targeted_fusions ) 
+# these 27 were not originally selected because of not meeting the requirements intially set out for recurrent fusions of initial interest.
+
+
+```
+
+```{r}
+# find the set of samples containing those fusions
+
+starF_containing_missed_COSMIC = starF_COSMIC_data %>% filter(fusion_name %in% missing_COSMIC_fusions)
+
+starF_containing_missed_COSMIC
+
+```
+
+
+```{r}
+
+# get list of samples to target now using FusionInspector
+
+samples_to_process = starF_containing_missed_COSMIC %>% select(sample_name) %>% unique() %>% pull(sample_name)
+
+write.table(samples_to_process, file="samples_containing_earlier_missed_COSMIC_fusions.list", quote=F, row.names = F, col.names = F)
+
+```
+
+
+
+These samples were processed through STARF/FusionInspector.
+
+
+```{r}
+
+new_data = read.table(gzfile("../data/FusionInspector.v2.4.0.COSMIC_hindsight_samples.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+new_data_COSMIC = new_data %>% filter(fusion_name %in% missing_COSMIC_fusions)
+
+
+# restrict to primary fusion variant (isoform) 
+
+new_data_COSMIC = new_data_COSMIC %>% group_by(sample_name, fusion_name) %>% arrange(desc(FFPM)) %>% filter(row_number() == 1) %>% ungroup()
+
+#new_data_COSMIC = new_data_COSMIC %>% filter(fusion_name != "RUNX1--RUNX1T1")  # can examine the effect of removing this one
+
+```
+
+```{r}
+
+# show counts of these earlier-excluded COSMIC fusions among their predicted fusion clusters
+
+new_data_COSMIC %>% group_by(fusion_name, pred_cluster) %>% tally() %>% ggplot(aes(x=factor(pred_cluster), y=n, fill=fusion_name)) + geom_col()
+
+
+```
+
+```{r}
+# show counts again, but according to the higher level categories
+
+new_data_COSMIC %>% group_by(fusion_name, fusion_cluster_att) %>% tally() %>% 
+  ggplot(aes(x=factor(fusion_cluster_att), y=n, fill=fusion_name)) + geom_col()
+
+
+```
+
+
+```{r}
+
+new_data_COSMIC %>% group_by(fusion_cluster_att) %>% tally() %>% 
+ mutate(pct=prop.table(n))
+
+
+
+```
+
+
+```{r}
+
+FAR_data = new_data_COSMIC %>% filter(pred_cluster == 4) %>% 
+  rename("5p-FAR" = FAR_left, "3p-FAR" = FAR_right ) %>%
+  gather(key=FAR_type, value=FAR_val, "5p-FAR", "3p-FAR") %>%
+  mutate(FAR_type=factor(FAR_type, levels=c("5p-FAR", "3p-FAR"))) 
+
+
+FAR_data %>%
+  ggplot(aes(x=FAR_type, y=FAR_val)) + geom_boxplot() + facet_wrap(~fusion_name, scale='free_y') +
+  ggtitle("5p- and 3p-FAR distributions for these other COSMIC C4-pred fusions")
+
+
+```
+
+Not always the case for C4 predictions here, but most of the examples show higher 3' FAR than 5' FAR - iwth MYB-NFIB being a single notable example. The NUP214--ABL1 has little quantitative difference between the two and both values are very small.
+
+```{r}
+
+new_data_COSMIC %>% filter(fusion_name %in% c('MYB--NFIB', 'NUP214--ABL1') & pred_cluster == 4)
+
+```
+
