@@ -134,3 +134,12 @@ new_data_COSMIC %>% filter(fusion_name %in% c('MYB--NFIB', 'NUP214--ABL1') & pre
 
 ```
 
+```{r}
+
+# how many different fusion types had C4 representation?
+
+new_data_COSMIC %>% filter(pred_cluster == 4) %>% select(fusion_name) %>% unique()
+
+
+
+```
