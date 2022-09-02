@@ -105,17 +105,9 @@ fusion_annot_class_stats_gathered %>%
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size=rel(0.3) ))
 ```
 
-```{r}
 
-write.table(fusion_annot_class_stats_gathered, file="fusion_annot_class_stats_gathered.tsv", quote=F, sep="\t", row.names = F)
-
-```
 
 ```{r}
-
-
-
-
 
 source("../Rlib/fusion_plotting_routines.R")
 
@@ -219,3 +211,15 @@ fusions_in_mult_normals_n_tissues  %>% group_by(structure_type) %>% tally()
 fusions_in_mult_normals_n_tissues  %>% group_by(structure_type) %>% tally() %>% summarize(sum(n))
 
 ```
+
+
+
+
+
+```{r}
+
+save.image("fusion_data_for_main_figs.Rdata")
+
+```
+
+
