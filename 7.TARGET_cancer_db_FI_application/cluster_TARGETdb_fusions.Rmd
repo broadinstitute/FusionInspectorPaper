@@ -19,7 +19,7 @@ library(pheatmap)
 
 ```{r}
 
-FRACTION_DATA_USE = 0.20 # set to 1.0 to use all data
+FRACTION_DATA_USE = 0.20 # set to 1.0 to use all data, just takes a long time to run - like a full day.
 
 fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 

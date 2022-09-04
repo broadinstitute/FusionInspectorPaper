@@ -20,7 +20,7 @@ orig_starF_fusions_FULL= read.table(gzfile("../data/fusions_consolidated.Sep2019
 
 orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% rename(sample = sample_name)
 
-orig_starF_fusions_FULL$fusion_name = str_replace(orig_starF_fusions_FULL$fusion_name, "--", "::")
+orig_starF_fusions_FULL$fusion_name = str_replace(orig_starF_fusions_FULL$fusion_name, "--", "::") # using the new HUGO syntax
 
 ```
 

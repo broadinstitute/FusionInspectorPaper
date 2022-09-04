@@ -29,7 +29,7 @@ data = data %>% mutate(dataclassTN = paste0(data_class, "-", tumor_or_normal))
 
 #Count numbers of samples before basic filtering
 
-data %>% select(dataclassTN, sample_name) %>% unique() %>% ungroup() %>% group_by(dataclassTN) %>% tally()
+data %>% select(dataclassTN, sample) %>% unique() %>% ungroup() %>% group_by(dataclassTN) %>% tally()
 
 ```
 
@@ -63,7 +63,7 @@ data = data %>% filter(is_primary)
 
 #Count numbers of samples post basic filtering
 
-data %>% select(dataclassTN, sample_name) %>% unique() %>% ungroup() %>% group_by(dataclassTN) %>% tally()
+data %>% select(dataclassTN, sample) %>% unique() %>% ungroup() %>% group_by(dataclassTN) %>% tally()
 
 ```
 
@@ -82,7 +82,7 @@ get_fusion_counts_vs_min_FFPM_via_tissue_type = function (data, min_ffpm_vals = 
     
     samples_n_tissues = data %>%   
       filter(structure_type != "READTHRU") %>% 
-      select(data_class, dataclassTN, tissue_type, sample_name) %>% unique()
+      select(data_class, dataclassTN, tissue_type, sample) %>% unique()
     
     
     for (min_ffpm in min_ffpm_vals) {
@@ -90,11 +90,11 @@ get_fusion_counts_vs_min_FFPM_via_tissue_type = function (data, min_ffpm_vals = 
         
         data_filt = data %>% filter(FFPM >= min_ffpm)
         
-        counts_per_filt_sample = data_filt %>% select(data_class, dataclassTN, tissue_type, sample_name, fusion_name) %>% 
-            unique() %>% group_by(data_class, dataclassTN, tissue_type, sample_name) %>% tally(name='fusion_count')
+        counts_per_filt_sample = data_filt %>% select(data_class, dataclassTN, tissue_type, sample, fusion_name) %>% 
+            unique() %>% group_by(data_class, dataclassTN, tissue_type, sample) %>% tally(name='fusion_count')
         
         counts_per_filt_sample = left_join(samples_n_tissues, counts_per_filt_sample, 
-                                           by=c('data_class', 'dataclassTN', 'tissue_type', 'sample_name')) %>%
+                                           by=c('data_class', 'dataclassTN', 'tissue_type', 'sample')) %>%
         mutate(fusion_count = ifelse(is.na(fusion_count), 0, fusion_count))
         
         
@@ -236,11 +236,11 @@ tcga_tissues_with_matched_normals = median_tissue_fusion_counts %>% filter(datac
 
 source("../Rlib/geom_split_violin.R")
 
-tcga_sample_info = data %>% filter(data_class == "TCGA") %>% select(tissue_type, sample_name) %>% unique()
-tcga_sample_info$patient = str_replace(tcga_sample_info$sample_name, "-(NT|TP)$", "")
+tcga_sample_info = data %>% filter(data_class == "TCGA") %>% select(tissue_type, sample) %>% unique()
+tcga_sample_info$patient = str_replace(tcga_sample_info$sample, "-(NT|TP)$", "")
 patients_with_both_tumor_normal_samples = tcga_sample_info %>% group_by(patient) %>% tally() %>% filter(n>1) %>% pull(patient)
 
-tissue_fusion_counts_vs_min_ffpm$patient = str_replace(tissue_fusion_counts_vs_min_ffpm$sample_name, "-(NT|TP)$", "")
+tissue_fusion_counts_vs_min_ffpm$patient = str_replace(tissue_fusion_counts_vs_min_ffpm$sample, "-(NT|TP)$", "")
 
 tumor_normal_compare_pvalues = NULL
 
@@ -421,7 +421,7 @@ Below we count the fraction of tumor or normal samples that correspond to COSMIC
 
 cosmic_fusion_occurrence = data2 %>% filter(data_class == "GTEx" | tumor_or_normal == "tumor") %>% 
     filter(dataclass2 == "Cosmic") %>% 
-    select(fusion_name, sample_name, data_class, tissue_type) %>% 
+    select(fusion_name, sample, data_class, tissue_type) %>% 
     unique() %>% 
     mutate(sample_tissue = paste(data_class, tissue_type)) %>% 
     select (fusion_name, sample_tissue) %>% 
@@ -430,9 +430,9 @@ cosmic_fusion_occurrence = data2 %>% filter(data_class == "GTEx" | tumor_or_norm
 
 
 sample_tissue_counts = data2 %>% filter(data_class == "GTEx" | tumor_or_normal == "tumor") %>% 
-    select(sample_name, data_class, tissue_type) %>% 
+    select(sample, data_class, tissue_type) %>% 
     mutate(sample_tissue = paste(data_class, tissue_type)) %>% 
-    select(sample_name, sample_tissue) %>% 
+    select(sample, sample_tissue) %>% 
     unique() %>% 
     group_by(sample_tissue) %>% 
     tally()
