@@ -57,8 +57,8 @@ Also, we restrict to those isoforms that have breakpoints consistent with splice
 data = data %>% filter(is_primary)
 
 
-# require reference splicing
-# data = data %>% filter(SpliceType == "ONLY_REF_SPLICE")
+# require reference splicing for non-cosmic
+data = data %>% filter(SpliceType == "ONLY_REF_SPLICE" | cosmic)
 
 
 #Count numbers of samples post basic filtering
