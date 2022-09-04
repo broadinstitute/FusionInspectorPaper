@@ -18,11 +18,13 @@ plot_cosmic_like_cluster_fraction = function(fusion_list) {
 
     cosmic_cluster_like_fraction_plot = fusion_annot_class_stats_gathered %>%
         filter(fusion_name %in% fusion_list) %>%
+        mutate(frac_fusions = ifelse(frac_fusions > 0, frac_fusions, NA) ) %>%
         ggplot(aes(x=fusion_name, y=cluster_annot_type, fill=frac_fusions)) +
         geom_tile() +
         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
         ylab("Cluster Type") +
-        theme(axis.text.y = element_text(size=rel(0.7)))
+        theme(axis.text.y = element_text(size=rel(0.7)))  +
+        scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white")
 
     return(cosmic_cluster_like_fraction_plot)
 }
@@ -41,7 +43,8 @@ plot_frame_effect_fractions = function(fusion_list) {
         geom_tile() +
         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
         ylab("Coding Effect") +
-        theme(axis.text.y = element_text(size=rel(0.7)))
+        theme(axis.text.y = element_text(size=rel(0.7))) +
+        scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white")
 
     return(frame_effect_fractions_plot)
 
