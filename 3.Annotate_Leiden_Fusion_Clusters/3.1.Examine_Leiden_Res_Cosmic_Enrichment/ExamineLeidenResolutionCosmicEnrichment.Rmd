@@ -31,7 +31,7 @@ run_fishers_exact_test = function(yes_cosmic, no_cosmic, tot_cosmic_fusions, tot
 
 ```{r}
 
-files = list.files(path = "./__data", pattern="FIdevx2.fusion_table.scaled.umap.leiden.res.*tsv.gz")
+files = list.files(path = "./__data", pattern="FI.fusion_table.scaled.umap.leiden.res.*tsv.gz")
 
 summary_df = NULL
 
@@ -40,7 +40,7 @@ for (filename in files) {
     data = read.table(gzfile(paste0("./__data/",filename)), header=T)
     data = data %>% filter(is_primary)
     
-    resolution = str_replace(filename, "FIdevx2.fusion_table.scaled.umap.leiden.res", "")
+    resolution = str_replace(filename, "FI.fusion_table.scaled.umap.leiden.res", "")
     resolution = str_replace(resolution, ".tsv.gz", "")
     
     cosmic_cluster_count_info = data %>% group_by(leiden, cosmic) %>% tally() %>% 
