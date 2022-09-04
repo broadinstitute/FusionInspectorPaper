@@ -82,11 +82,5 @@ fusions_in_C4_min_3_samples %>% filter(fusion_name %in% cosmic_fusions)
 
 ```
 
-```{r}
-#Examine the fusion prediction stats:
-    
-   
 
-
-```
     

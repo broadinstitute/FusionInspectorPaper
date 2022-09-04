@@ -211,7 +211,7 @@ starF_TCGA_cosmic_fusions = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v
 # count cosmic fusions according to sample
 
 TCGA_cosmic_counts = starF_TCGA_cosmic_fusions %>% 
-  select(sample_name, fusion_name) %>% 
+  select(sample, fusion_name) %>% 
   group_by(fusion_name) %>% 
   tally(name='cosmic_count') %>% 
   mutate(data_class = "TCGA")

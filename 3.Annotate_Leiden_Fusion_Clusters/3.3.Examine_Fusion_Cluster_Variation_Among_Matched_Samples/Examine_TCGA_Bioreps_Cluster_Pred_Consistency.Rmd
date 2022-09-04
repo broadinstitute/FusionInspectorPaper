@@ -80,14 +80,16 @@ repro_fusions_data %>% group_by(participant, fusion_variant, pred_cluster) %>% t
 
 #  check reproducibility for cluster annotation-level predictions
 
-repro_fusions_data %>% mutate(fusion_cluster_att = ifelse(grepl("artifact", fusion_cluster_att), "artifact", fusion_cluster_att) ) %>%
-group_by(participant, fusion_variant, fusion_cluster_att) %>% tally() %>% mutate(agree = (n>1)) %>%
+repro_fusions_data %>% 
+  #mutate(fusion_cluster_att = ifelse(grepl("artifact", fusion_cluster_att), "artifact", fusion_cluster_att) ) %>%
+  group_by(participant, fusion_variant, fusion_cluster_att) %>% tally() %>% mutate(agree = (n>1)) %>%
   ggplot(aes(x=fusion_cluster_att, y=n, fill=agree)) + geom_col()
 
 
 
-repro_fusions_data %>% mutate(fusion_cluster_att = ifelse(grepl("artifact", fusion_cluster_att), "artifact", fusion_cluster_att) ) %>%
-group_by(participant, fusion_variant, fusion_cluster_att) %>% tally() %>% mutate(agree = (n>1)) %>%
+repro_fusions_data %>% 
+    #mutate(fusion_cluster_att = ifelse(grepl("artifact", fusion_cluster_att), "artifact", fusion_cluster_att) ) %>%
+   group_by(participant, fusion_variant, fusion_cluster_att) %>% tally() %>% mutate(agree = (n>1)) %>%
   group_by(fusion_cluster_att, agree) %>% summarize(sum_agree = sum(n)) %>%
    mutate(pct=prop.table(sum_agree))  %>%
   ggplot(aes(x=fusion_cluster_att, y=pct, fill=agree)) + geom_col()

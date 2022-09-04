@@ -11,7 +11,7 @@ annotate_leiden_clusters = function(fusion_data) {
     fusion_data = fusion_data %>%
         mutate(fusion_cluster_att = ifelse(leiden %in% expr_microH_RT_artifact_clusters, "expr_microH_RT_artifact?", fusion_cluster_att)) %>%
         mutate(fusion_cluster_att = ifelse(leiden %in% high_FAR_microH_bioinf_artifact_clusters, "high_FAR_microH_bioinf_artifact?", fusion_cluster_att)) %>%
-        mutate(fusion_cluster_att = ifelse(leiden == cosmic_peak_enriched_cluster, "cosmic-peak-enriched", fusion_cluster_att))
+        mutate(fusion_cluster_att = ifelse(leiden == cosmic_peak_enriched_cluster, "COSMIC-like", fusion_cluster_att))
 
 
     return(fusion_data)

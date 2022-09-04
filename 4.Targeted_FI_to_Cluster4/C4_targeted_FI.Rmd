@@ -81,7 +81,7 @@ write.table(orig_STARF_tumor_normal_stats, "fusions_236_logTN_stats.tsv", quote=
 ```{r}
 
 fusion_annot_class_stats_gathered = fusion_annot_class_stats %>%
-    gather(key=cluster_annot_type, value=frac_fusions, `cosmic-peak-enriched`, artifact, other)
+    gather(key=cluster_annot_type, value=frac_fusions, `COSMIC-like`, artifact, other)
 ```
 
 
@@ -144,6 +144,16 @@ head(tcga_type_fractions)
 fusion_to_tcga_tumor_type_count = tcga_type_fractions %>% group_by(fusion_name) %>% tally(name='tcga_tumor_type_count')
 
 head(fusion_to_tcga_tumor_type_count)
+
+
+
+# FGFR3::TACC3	11			
+# CCAT1::CASC8	9			
+# VCL::ADK	12			
+# TMPRSS2::ERG	2			
+# RP11-400N13.3::RP11-815M8.1	29			
+# CCDC6::RET	3
+
 ```
 
 
@@ -162,6 +172,13 @@ head(gtex_type_fractions)
 
 fusion_to_gtex_normal_type_count = gtex_type_fractions %>% group_by(fusion_name) %>% tally(name='gtex_normal_type_count')
 head(fusion_to_gtex_normal_type_count)
+
+# TMPRSS2::ERG	1			
+# RP11-400N13.3::RP11-815M8.1	10			
+# RP11-206M11.7::TM4SF1-AS1	1			
+# RP11-109J4.1::ATP10B	3			
+# AC005534.8::LINC01006	1			
+# AC005618.6::PCDHGB7	1	
 
 ```
 
@@ -191,11 +208,18 @@ fusions_in_mult_normals_n_tissues
 
 fusions_in_mult_normals_n_tissues  %>% group_by(structure_type) %>% tally()
 
+
+# INTERCHR	1			
+# IntraCHR	31			
+# READTHRU	29	
+
 ```
 
 ```{r}
 
 fusions_in_mult_normals_n_tissues  %>% group_by(structure_type) %>% tally() %>% summarize(sum(n))
+
+# 61
 
 ```
 

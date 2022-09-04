@@ -14,7 +14,7 @@ library(tidyverse)
 ```{r}
 # define the COSMIC fusions found in our initial STAR-Fusion survey:
 
-starF_COSMIC_data = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.COSMIC.tsv"), header=T, sep="\t", stringsAsFactors = F)
+starF_COSMIC_data = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz"), header=T, sep="\t", stringsAsFactors = F) %>% filter(cosmic)
 
 starF_COSMIC_fusions = starF_COSMIC_data %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
 
@@ -56,7 +56,7 @@ starF_containing_missed_COSMIC
 
 # get list of samples to target now using FusionInspector
 
-samples_to_process = starF_containing_missed_COSMIC %>% select(sample_name) %>% unique() %>% pull(sample_name)
+samples_to_process = starF_containing_missed_COSMIC %>% select(sample) %>% unique() %>% pull(sample)
 
 write.table(samples_to_process, file="samples_containing_earlier_missed_COSMIC_fusions.list", quote=F, row.names = F, col.names = F)
 
@@ -76,7 +76,7 @@ new_data_COSMIC = new_data %>% filter(fusion_name %in% missing_COSMIC_fusions)
 
 # restrict to primary fusion variant (isoform) 
 
-new_data_COSMIC = new_data_COSMIC %>% group_by(sample_name, fusion_name) %>% arrange(desc(FFPM)) %>% filter(row_number() == 1) %>% ungroup()
+new_data_COSMIC = new_data_COSMIC %>% group_by(sample, fusion_name) %>% arrange(desc(FFPM)) %>% filter(row_number() == 1) %>% ungroup()
 
 #new_data_COSMIC = new_data_COSMIC %>% filter(fusion_name != "RUNX1--RUNX1T1")  # can examine the effect of removing this one
 
@@ -130,7 +130,7 @@ Not always the case for C4 predictions here, but most of the examples show highe
 
 ```{r}
 
-new_data_COSMIC %>% filter(fusion_name %in% c('MYB--NFIB', 'NUP214--ABL1') & pred_cluster == 4)
+new_data_COSMIC %>% filter(fusion_name %in% c('MYB::NFIB', 'NUP214::ABL1') & pred_cluster == 4)
 
 ```
 

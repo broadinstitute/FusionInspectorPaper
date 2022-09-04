@@ -19,7 +19,6 @@ data = read.table(gzfile("../../data/FusionInspector.v2.4.0.C4_targeted_fusions.
 
 data = data %>% mutate(fusion_variant = paste(fusion_name, LeftBreakpoint, RightBreakpoint))
 
-data = data %>% mutate(fusion_cluster_att = ifelse(pred_cluster == 4, "cosmic-peak-enriched", fusion_cluster_att)) # highlight C4 
 
 ```
 
@@ -28,9 +27,9 @@ data = data %>% mutate(fusion_cluster_att = ifelse(pred_cluster == 4, "cosmic-pe
 
 tcga_data = data %>% filter(data_class == "TCGA")
 
-tcga_data$type = sapply(tcga_data$sample_name, function(x) {str_split(x, "-")[[1]][4] })
+tcga_data$type = sapply(tcga_data$sample, function(x) {str_split(x, "-")[[1]][4] })
 
-tcga_data$participant = sapply(tcga_data$sample_name, function(x) { vals = str_split(x, "-")[[1]]; paste(vals[c(1,2,3)], collapse ="-") })
+tcga_data$participant = sapply(tcga_data$sample, function(x) { vals = str_split(x, "-")[[1]]; paste(vals[c(1,2,3)], collapse ="-") })
 
 ```
 
@@ -91,7 +90,7 @@ tcga_data_matched_fusions %>% select(participant, fusion_variant, type, pred_clu
 
 gtex_data = data %>% filter(data_class == "GTEx")
 
-gtex_data$participant = sapply(gtex_data$sample_name, function(x) { vals = str_split(x, "-")[[1]]; paste(vals[c(1,2)], collapse ="-") })
+gtex_data$participant = sapply(gtex_data$sample, function(x) { vals = str_split(x, "-")[[1]]; paste(vals[c(1,2)], collapse ="-") })
 
 ```
 
@@ -111,7 +110,7 @@ gtex_data_matched_fusions = left_join(gtex_samples_with_matched_fusions %>% sele
 ```{r}
 
 
-gtex_data_matched_fusions %>% select(participant, sample_name, fusion_variant, pred_cluster, fusion_cluster_att)
+gtex_data_matched_fusions %>% select(participant, sample, fusion_variant, pred_cluster, fusion_cluster_att)
 
 ```
 
@@ -189,10 +188,10 @@ group_by(participant, fusion_variant, fusion_cluster_att) %>% tally() %>% mutate
 
 library(igraph)
 
-combined_results = full_join(data_matched_fusions %>% select(participant, sample_name, fusion_variant, pred_cluster, fusion_cluster_att),
-                             data_matched_fusions %>% select(participant, sample_name, fusion_variant, pred_cluster, fusion_cluster_att),
+combined_results = full_join(data_matched_fusions %>% select(participant, sample, fusion_variant, pred_cluster, fusion_cluster_att),
+                             data_matched_fusions %>% select(participant, sample, fusion_variant, pred_cluster, fusion_cluster_att),
                              by = c('participant', 'fusion_variant') ) %>%
-  filter(sample_name.x != sample_name.y)
+  filter(sample.x != sample.y)
 
 
 

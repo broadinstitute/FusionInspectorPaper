@@ -271,6 +271,21 @@ cosmic_like_clusters = fusion_data %>%
     filter(n>=2) %>% 
     arrange(desc(n))
 
+
+# leiden  n
+# 4     	98			
+# 6	      13			
+# 8	       8			
+# 23       6			
+# 39	     6			
+# 13	     5			
+# 38	     5			
+# 7	       3			
+# 3	       2			
+# 10	     2	
+
+
+
 cosmic_like_clusters
 ```
 
@@ -309,6 +324,14 @@ fusion_data = annotate_leiden_clusters(fusion_data)
 # General statistics on cluster annotation types.
 
 fusion_data %>% filter(is_primary) %>% group_by(fusion_cluster_att) %>% tally() %>% mutate(pct=prop.table(n))
+
+# fusion_cluster_att  n    pct
+# cosmic-like	1511	0.03915421
+# expr_microH_RT_artifact?	756	0.01959006
+# high_FAR_microH_bioinf_artifact?	444	0.01150527
+# high_FAR_microH_bioinf_artifact?	444	0.01150527		
+# NA	35880	0.92975046
+
 ```
 
 ```{r}
@@ -335,6 +358,8 @@ artifact_fusion_fraction
 artifact_fusion_data %>% mutate(rel_frac = pct/artifact_fusion_fraction)
 
 
+# expr_microH_RT_artifact?	756	0.01959006	0.63	
+# high_FAR_microH_bioinf_artifact?	444	0.01150527	0.37
 ```
 
 
@@ -346,7 +371,7 @@ fusion_data %>% filter(is_primary)  %>%
     filter(fusion_cluster_att %in% c('expr_microH_RT_artifact?', 'high_counter_evidence', 'high_FAR_microH_bioinf_artifact?'))  %>%
     filter(cosmic)
 
-
+# 0
 ```
 
 
@@ -424,7 +449,7 @@ cosmic_FAR_data %>%
 
 ```{r}
 
-cosmic_paired_FAR_data = cosmic_FAR_data %>% select(sample_name, fusion_name, FAR_type, FAR_val) %>% spread(key=FAR_type, value=FAR_val)
+cosmic_paired_FAR_data = cosmic_FAR_data %>% select(sample, fusion_name, FAR_type, FAR_val) %>% spread(key=FAR_type, value=FAR_val)
 
 cosmic_fusions_here = cosmic_paired_FAR_data %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
 
@@ -533,6 +558,9 @@ cosmic_cluster_info_stats %>% filter(yes_cosmic >= 2)
 cosmic_cluster_info_stats %>% filter(yes_cosmic >= 2) %>% 
     filter(leiden != 4) %>%
     summarize(sum(pct_all_cosmic_fusions), sum(pct_tot_fusions))
+
+# sum(pct_all_cosmic_fusions) sum(pct_tot_fusions)
+# 0.372093	0.3424114
 
 ```
 

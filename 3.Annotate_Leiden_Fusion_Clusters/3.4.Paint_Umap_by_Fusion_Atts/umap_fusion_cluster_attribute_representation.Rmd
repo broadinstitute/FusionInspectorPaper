@@ -224,13 +224,27 @@ by_consensus_splice_plot
 
 ```
 
+```{r}
 
+by_fusion_cluster_att_plot = data %>% 
+  ggplot(aes(x=umap1, y=umap2, color=fusion_cluster_att) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() + ggtitle("fusion cluster att") 
+
+
+by_fusion_cluster_att_plot
+
+
+```
 
 ```{r}
 
 #Make summary figure.
 
-summary_fig = plot_grid(leiden_umap, by_TCGA_GTEx_representation_plot, fractional_cluster_rep_plot, by_FFPM_plot, 
+summary_fig = plot_grid(leiden_umap, by_TCGA_GTEx_representation_plot, 
+                        #fractional_cluster_rep_plot, 
+                        by_fusion_cluster_att_plot + theme(legend.position = "none"),
+                        by_FFPM_plot, 
                         by_left_counter_ffpm_plot, by_right_counter_ffpm_plot,
                         by_FAR_left_plot, by_FAR_right_plot,
                         by_microh_brkpt_dist_plot, by_num_microh_plot,

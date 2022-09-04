@@ -25,7 +25,13 @@ Note, it isn't clear that this process can be run as fully reproducible. Running
 
 ```{r}
 
+
+FRACTION_DATA_USE = 0.20 # set to 1.0 to use all data, just takes a long time to run 
+
 fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.examine_recurrents.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+fusion_data = fusion_data %>% sample_frac(FRACTION_DATA_USE)
+
 
 # remove the earlier umap and leiden assignments as we'll be recomputing them here.
 
