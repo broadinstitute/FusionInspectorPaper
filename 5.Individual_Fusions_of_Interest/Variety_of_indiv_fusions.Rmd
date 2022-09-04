@@ -30,7 +30,7 @@ TFG--GPR128
 
 orig_STARF_fusion_preds = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz"), 
                                      header=T, sep="\t", stringsAsFactors = F) %>% 
-                                     mutate(patient_name = str_replace(sample_name, "-TP", "")) %>%
+                                     mutate(patient_name = str_replace(sample, "-TP", "")) %>%
                                      mutate(patient_name = str_replace(patient_name, "-NT", ""))
 
 
@@ -111,15 +111,15 @@ examine_sample_fractions_with_fusion = function(input_fusion_name) {
 compare_origSTARF_to_FI = function(select_fusion_name) {
 
     fusion_pred_comparison = full_join( orig_STARF_fusion_preds %>% 
-                                                filter(sample_name %in% FI_samples) %>%
+                                                filter(sample %in% FI_samples) %>%
                                                 filter(is_primary & fusion_name == select_fusion_name) %>% 
-                                                select(sample_name, data_class, tissue_type, tumor_or_normal, FFPM),
+                                                select(sample, data_class, tissue_type, tumor_or_normal, FFPM),
                                             
                                             fusion_data %>%
-                                                filter(sample_name %in% FI_samples) %>%
+                                                filter(sample %in% FI_samples) %>%
                                                 filter(is_primary & fusion_name == select_fusion_name) %>% 
-                                                select(sample_name, data_class, tissue_type, tumor_or_normal, FFPM),
-                                            by=c('sample_name', 'data_class', 'tissue_type', 'tumor_or_normal'),
+                                                select(sample, data_class, tissue_type, tumor_or_normal, FFPM),
+                                            by=c('sample', 'data_class', 'tissue_type', 'tumor_or_normal'),
                                             suffix=c('.starF', '.FI') )
     
     return(fusion_pred_comparison)
@@ -156,7 +156,7 @@ test_fusion_expr_ranking = function(fusion_name_select, min_FFPM=0) {
 
 # TMPRSS2--ERG in FI screen:
 
-fusion_data %>% filter(fusion_name == "TMPRSS2--ERG") %>% filter(is_primary) %>% group_by(data_class, tumor_or_normal, tissue_type) %>% tally()
+fusion_data %>% filter(fusion_name == "TMPRSS2::ERG") %>% filter(is_primary) %>% group_by(data_class, tumor_or_normal, tissue_type) %>% tally()
 ```
 
 
@@ -165,7 +165,7 @@ fusion_data %>% filter(fusion_name == "TMPRSS2--ERG") %>% filter(is_primary) %>%
 
 # TMPRSS2--ERG compared to earlier STAR-F results:
 
-starF_and_FI_TMPRSS2_ERG_calls = compare_origSTARF_to_FI("TMPRSS2--ERG")
+starF_and_FI_TMPRSS2_ERG_calls = compare_origSTARF_to_FI("TMPRSS2::ERG")
                                           
 
 # finding of a normal prostate sample with evidence of the fusion.
@@ -177,7 +177,7 @@ starF_and_FI_TMPRSS2_ERG_calls %>% filter(data_class == "GTEx")
 
 ```{r}
 
-fusion_annot_class_stats %>% filter(fusion_name == "TMPRSS2--ERG")
+fusion_annot_class_stats %>% filter(fusion_name == "TMPRSS2::ERG")
 
 ```
 
@@ -188,7 +188,7 @@ fusion_annot_class_stats %>% filter(fusion_name == "TMPRSS2--ERG")
 
 # FGFR--TACC3
 
-fusion_data %>% filter(fusion_name == "FGFR3--TACC3") %>% 
+fusion_data %>% filter(fusion_name == "FGFR3::TACC3") %>% 
     filter(is_primary) %>% 
     group_by(data_class, tissue_type, tumor_or_normal) %>% 
     tally() %>% 
@@ -201,7 +201,7 @@ fusion_data %>% filter(fusion_name == "FGFR3--TACC3") %>%
 
 # original starF findings:
 
-orig_STARF_fusion_preds %>% filter(fusion_name == "FGFR3--TACC3" & is_primary) %>% 
+orig_STARF_fusion_preds %>% filter(fusion_name == "FGFR3::TACC3" & is_primary) %>% 
     group_by(data_class, tissue_type, tumor_or_normal) %>% 
     tally() %>% 
     arrange(desc(n)) 
@@ -213,7 +213,7 @@ orig_STARF_fusion_preds %>% filter(fusion_name == "FGFR3--TACC3" & is_primary) %
 
 ```{r}
 
-starF_and_FI_FGFR3_TACC3_calls = compare_origSTARF_to_FI("FGFR3--TACC3")
+starF_and_FI_FGFR3_TACC3_calls = compare_origSTARF_to_FI("FGFR3::TACC3")
 
  
 starF_and_FI_FGFR3_TACC3_calls
@@ -229,7 +229,7 @@ starF_and_FI_FGFR3_TACC3_calls
 
 ```{r}
 
-fusion_data %>% filter(fusion_name == "CCAT1--CASC8") %>% 
+fusion_data %>% filter(fusion_name == "CCAT1::CASC8") %>% 
     filter(is_primary) %>% 
     group_by(data_class, tissue_type, tumor_or_normal) %>% 
     tally() %>% 
@@ -240,7 +240,7 @@ fusion_data %>% filter(fusion_name == "CCAT1--CASC8") %>%
 
 
 ```{r}
-examine_sample_fractions_with_fusion("CCAT1--CASC8")
+examine_sample_fractions_with_fusion("CCAT1::CASC8")
 ```
 
 
@@ -248,7 +248,7 @@ examine_sample_fractions_with_fusion("CCAT1--CASC8")
 ## VCL--ADK
 ```{r}
 
-fusion_data %>% filter(fusion_name == "VCL--ADK") %>% 
+fusion_data %>% filter(fusion_name == "VCL::ADK") %>% 
     filter(is_primary) %>% 
     group_by(data_class, tissue_type, tumor_or_normal) %>% 
     tally() %>% 
@@ -259,7 +259,7 @@ fusion_data %>% filter(fusion_name == "VCL--ADK") %>%
 
 
 ```{r}
-examine_sample_fractions_with_fusion("VCL--ADK")
+examine_sample_fractions_with_fusion("VCL::ADK")
 ```
 
 
@@ -267,13 +267,13 @@ examine_sample_fractions_with_fusion("VCL--ADK")
 ## PVT1--MYC
 
 ```{r}
-orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1--MYC") %>% 
+orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1::MYC") %>% 
     filter(is_primary) %>% 
     group_by(data_class, tissue_type, tumor_or_normal) %>% 
     tally() %>% 
     arrange(desc(n)) 
 
-orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1--MYC") %>% 
+orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1::MYC") %>% 
     filter(is_primary) %>% 
     group_by(data_class, tumor_or_normal) %>% 
     tally() %>% 
@@ -284,13 +284,13 @@ orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1--MYC") %>%
 
 ```{r}
 
-fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% 
+fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% 
     filter(is_primary) %>% 
     group_by(data_class, tissue_type, tumor_or_normal) %>% 
     tally() %>% 
     arrange(desc(n)) 
 
-fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% 
+fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% 
     filter(is_primary) %>% 
     group_by(data_class, tumor_or_normal) %>% 
     tally() %>% 
@@ -302,7 +302,7 @@ fusion_data %>% filter(fusion_name == "PVT1--MYC") %>%
 # separately list tumor and normals
 
 ## tumors
-fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% 
+fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% 
     filter(is_primary) %>% filter(tumor_or_normal == "tumor") %>%
     group_by(data_class, tissue_type, tumor_or_normal) %>% 
     tally() %>% 
@@ -310,7 +310,7 @@ fusion_data %>% filter(fusion_name == "PVT1--MYC") %>%
     
 ## normals
     
-fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% 
+fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% 
     filter(is_primary) %>% filter(tumor_or_normal == "normal") %>%
     group_by(data_class, tissue_type, tumor_or_normal) %>% 
     tally() %>% 
@@ -321,7 +321,7 @@ fusion_data %>% filter(fusion_name == "PVT1--MYC") %>%
 
 ```{r}
 
-starF_and_FI_PVT1_MYC_calls = compare_origSTARF_to_FI("PVT1--MYC")
+starF_and_FI_PVT1_MYC_calls = compare_origSTARF_to_FI("PVT1::MYC")
 
 starF_and_FI_PVT1_MYC_calls
 
@@ -337,9 +337,9 @@ starF_and_FI_PVT1_MYC_calls %>% mutate(has_starF = ! is.na(FFPM.starF), has_FI =
 
 ```{r}
 
-pvt1_myc_normal_ffpms = fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% filter(is_primary) %>% filter(tumor_or_normal == "normal") %>% pull(FFPM)
+pvt1_myc_normal_ffpms = fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% filter(is_primary) %>% filter(tumor_or_normal == "normal") %>% pull(FFPM)
 
-pvt1_myc_tumor_ffpms = fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% filter(is_primary) %>% filter(tumor_or_normal == "tumor") %>% pull(FFPM)
+pvt1_myc_tumor_ffpms = fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% filter(is_primary) %>% filter(tumor_or_normal == "tumor") %>% pull(FFPM)
 
 wilcox.test(pvt1_myc_tumor_ffpms, pvt1_myc_normal_ffpms, alternative = 'greater')
 
@@ -350,9 +350,9 @@ wilcox.test(pvt1_myc_tumor_ffpms, pvt1_myc_normal_ffpms, alternative = 'greater'
 ```{r}
 
 # expr view from the latest FI data
-fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% 
+fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% 
     filter(is_primary) %>% 
-    ggplot(aes(x=reorder(sample_name, FFPM), y=FFPM, fill=tumor_or_normal)) + 
+    ggplot(aes(x=reorder(sample, FFPM), y=FFPM, fill=tumor_or_normal)) + 
     geom_col() + 
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
@@ -361,8 +361,8 @@ fusion_data %>% filter(fusion_name == "PVT1--MYC") %>%
 
 ```{r}
 
-fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% 
-    filter(is_primary) %>% arrange(FFPM) %>% select(sample_name, FFPM)
+fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% 
+    filter(is_primary) %>% arrange(FFPM) %>% select(sample, FFPM)
 
 
 ```
@@ -375,9 +375,9 @@ PVT1--MYC is expressed more highly in CESC than the others.
 
 ```{r}
 
-pvt1_myc_normal_ffpms = orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1--MYC") %>% filter(is_primary) %>% filter(tumor_or_normal == "normal") %>% pull(FFPM)
+pvt1_myc_normal_ffpms = orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1::MYC") %>% filter(is_primary) %>% filter(tumor_or_normal == "normal") %>% pull(FFPM)
 
-pvt1_myc_tumor_ffpms = orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1--MYC") %>% filter(is_primary) %>% filter(tumor_or_normal == "tumor") %>% pull(FFPM)
+pvt1_myc_tumor_ffpms = orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1::MYC") %>% filter(is_primary) %>% filter(tumor_or_normal == "tumor") %>% pull(FFPM)
 
 wilcox.test(pvt1_myc_tumor_ffpms, pvt1_myc_normal_ffpms, exact = F, alternative = 'greater')
 
@@ -390,9 +390,9 @@ Compare CESC expression to all other samples
 
 ```{r}
 
-pvt1_myc_CESC_ffpms = fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% filter(is_primary) %>% filter(tissue_type == "CESC") %>% pull(FFPM)
+pvt1_myc_CESC_ffpms = fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% filter(is_primary) %>% filter(tissue_type == "CESC") %>% pull(FFPM)
 
-pvt1_myc_OTHER_ffpms = fusion_data %>% filter(fusion_name == "PVT1--MYC") %>% filter(is_primary) %>% filter(tissue_type != "CESC") %>% pull(FFPM)
+pvt1_myc_OTHER_ffpms = fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% filter(is_primary) %>% filter(tissue_type != "CESC") %>% pull(FFPM)
 
 wilcox.test(pvt1_myc_CESC_ffpms, pvt1_myc_OTHER_ffpms, exact = F, alternative = 'greater')
 
@@ -421,9 +421,9 @@ bcr_abl1_sample_counts %>% ggplot(aes(x=fusion_name, y=n, fill=tissue_type)) + g
 
 # get those samples that have both the forward and reciprocal orientation
 
-full_join(fusion_data %>% filter(is_primary & fusion_name == "BCR--ABL1") %>% select(sample_name, FFPM),
-          fusion_data %>% filter(is_primary & fusion_name == "ABL1--BCR") %>% select(sample_name, FFPM),
-          by = 'sample_name',
+full_join(fusion_data %>% filter(is_primary & fusion_name == "BCR::ABL1") %>% select(sample, FFPM),
+          fusion_data %>% filter(is_primary & fusion_name == "ABL1::BCR") %>% select(sample, FFPM),
+          by = 'sample',
           suffix=c('.bcr_abl1', '.abl1_bcr') ) %>% 
     filter(! (is.na(FFPM.bcr_abl1) | is.na(FFPM.abl1_bcr) ) )
 
@@ -432,8 +432,8 @@ full_join(fusion_data %>% filter(is_primary & fusion_name == "BCR--ABL1") %>% se
 ```{r}
 # fusion breakpoint info for primary fusions across all bcr-abl1 instances
 
-fusion_data %>% filter(fusion_name == "BCR--ABL1") %>% filter(is_primary) %>%
-    select(fusion_name, sample_name, data_class, tumor_or_normal, tissue_type, FFPM, LeftBreakpoint, RightBreakpoint, pred_cluster, fusion_cluster_att) %>%
+fusion_data %>% filter(fusion_name == "BCR::ABL1") %>% filter(is_primary) %>%
+    select(fusion_name, sample, data_class, tumor_or_normal, tissue_type, FFPM, LeftBreakpoint, RightBreakpoint, pred_cluster, fusion_cluster_att) %>%
     arrange(desc(FFPM))
     
 ```
@@ -442,7 +442,7 @@ fusion_data %>% filter(fusion_name == "BCR--ABL1") %>% filter(is_primary) %>%
 
 ```{r}
 
-VTI1A_TCF7L2_fusions = fusion_data %>% filter(fusion_name == "VTI1A--TCF7L2") %>% filter(is_primary)
+VTI1A_TCF7L2_fusions = fusion_data %>% filter(fusion_name == "VTI1A::TCF7L2") %>% filter(is_primary)
 
 
 VTI1A_TCF7L2_fusions %>% group_by(data_class, tissue_type, tumor_or_normal) %>% count() %>% arrange(desc(n))
@@ -460,7 +460,7 @@ VTI1A_TCF7L2_fusions %>% ggplot(aes(x=tissue_type, y=FFPM, color=tumor_or_normal
 
 ```{r}
 
-VTI1A_TCF7L2_fusions %>% select(sample_name, tissue_type, tumor_or_normal, FFPM, est_J, est_S, LeftBreakpoint, RightBreakpoint, pred_cluster, fusion_cluster_att) %>%
+VTI1A_TCF7L2_fusions %>% select(sample, tissue_type, tumor_or_normal, FFPM, est_J, est_S, LeftBreakpoint, RightBreakpoint, pred_cluster, fusion_cluster_att) %>%
     arrange(desc(FFPM))
 ```
 
@@ -471,8 +471,8 @@ VTI1A_TCF7L2_fusions %>% select(sample_name, tissue_type, tumor_or_normal, FFPM,
 
 ```{r}
 
-fusion_data %>% filter(fusion_name == "CELA3A--CPA2") %>% filter(is_primary) %>%
-    select(data_class, sample_name, tissue_type, tumor_or_normal)
+fusion_data %>% filter(fusion_name == "CELA3A::CPA2") %>% filter(is_primary) %>%
+    select(data_class, sample, tissue_type, tumor_or_normal)
 
 ```
 
@@ -490,8 +490,8 @@ fusion_data %>% filter(grepl("SSX", fusion_name)) %>% filter(grepl("SS18", fusio
 
 ```{r}
 
-orig_STARF_fusion_preds %>% filter(fusion_name == "TFG--GPR128") %>% 
-     filter(is_primary) %>% ggplot(aes(x=reorder(sample_name, FFPM), y=FFPM+1, fill=tumor_or_normal)) + 
+orig_STARF_fusion_preds %>% filter(fusion_name == "TFG::GPR128") %>% 
+     filter(is_primary) %>% ggplot(aes(x=reorder(sample, FFPM), y=FFPM+1, fill=tumor_or_normal)) + 
     geom_col() + 
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
     scale_y_continuous(trans='log2')
@@ -503,8 +503,8 @@ orig_STARF_fusion_preds %>% filter(fusion_name == "TFG--GPR128") %>%
 
 ```{r}
 
-fusion_data %>% filter(fusion_name == "TFG--GPR128") %>% 
-     filter(is_primary) %>% ggplot(aes(x=reorder(sample_name, FFPM), y=FFPM+1, fill=tumor_or_normal)) + 
+fusion_data %>% filter(fusion_name == "TFG::GPR128") %>% 
+     filter(is_primary) %>% ggplot(aes(x=reorder(sample, FFPM), y=FFPM+1, fill=tumor_or_normal)) + 
     geom_col() + 
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
     scale_y_continuous(trans='log2')
@@ -516,13 +516,13 @@ fusion_data %>% filter(fusion_name == "TFG--GPR128") %>%
 
 
 ```{r}
-w = test_fusion_expr_ranking("TFG--GPR128")
+w = test_fusion_expr_ranking("TFG::GPR128")
 
 w
 ```
 
 ```{r}
-examine_sample_fractions_with_fusion("TFG--GPR128")
+examine_sample_fractions_with_fusion("TFG::GPR128")
 ```
 
 

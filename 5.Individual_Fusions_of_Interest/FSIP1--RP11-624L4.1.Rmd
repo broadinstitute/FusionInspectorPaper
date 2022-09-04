@@ -16,13 +16,13 @@ orig_starF_preds = read.table("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds
 tumor_normal_stats = read.table("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz", 
                                 header=T, sep="\t", stringsAsFactors=F)
 
-tumor_normal_stats %>% filter(fusion_name == "FSIP1--RP11-624L4.1")
+tumor_normal_stats %>% filter(fusion_name == "FSIP1::RP11-624L4.1")
 ```
 
 
 ```{r}
 # count number of BRCA tumor samples:
-orig_starF_preds %>% filter(tumor_or_normal == "tumor" & tissue_type == "BRCA") %>% select(data_class, sample_name) %>% unique() %>% count()
+orig_starF_preds %>% filter(tumor_or_normal == "tumor" & tissue_type == "BRCA") %>% select(data_class, sample) %>% unique() %>% count()
 
 ```
 
@@ -31,7 +31,7 @@ orig_starF_preds %>% filter(tumor_or_normal == "tumor" & tissue_type == "BRCA") 
 ```{r}
 fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.examine_recurrents.tsv.gz"), header=T, sep="\t", stringsAsFactors=F)
 
-fusion_data = fusion_data %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary)
+fusion_data = fusion_data %>% filter(fusion_name == "FSIP1::RP11-624L4.1") %>% filter(is_primary)
 
 ```
 
@@ -50,7 +50,7 @@ source("../Rlib/annotate_leiden_clusters.R")
 
 fusion_data = annotate_leiden_clusters(fusion_data)
 
-fusion_data = left_join(fusion_data, orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% select(sample_name, tumor_or_normal) %>% unique(), by='sample_name')
+fusion_data = left_join(fusion_data, orig_starF_preds %>% filter(fusion_name == "FSIP1::RP11-624L4.1") %>% select(sample, tumor_or_normal) %>% unique(), by='sample')
 
 fusion_data %>% group_by(data_class, tumor_or_normal, fusion_cluster_att) %>% tally()
 
@@ -62,10 +62,10 @@ Examine expression rankings.
 
 ```{r}
 
-num_brca_samples = orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>% nrow()
+num_brca_samples = orig_starF_preds %>% filter(fusion_name == "FSIP1::RP11-624L4.1") %>% filter(is_primary) %>% nrow()
 
-p = orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>%
-    ggplot(aes(x=reorder(sample_name, FFPM), y=FFPM, fill=tumor_or_normal)) + geom_col() + xlab(paste0(num_brca_samples, " BRCA samples ranked by FSIP1--RP11-624L4.1 FFPM")) + theme(axis.text.x=element_blank())
+p = orig_starF_preds %>% filter(fusion_name == "FSIP1::RP11-624L4.1") %>% filter(is_primary) %>%
+    ggplot(aes(x=reorder(sample, FFPM), y=FFPM, fill=tumor_or_normal)) + geom_col() + xlab(paste0(num_brca_samples, " BRCA samples ranked by FSIP1::RP11-624L4.1 FFPM")) + theme(axis.text.x=element_blank())
 
 plot(p)
 
@@ -74,9 +74,9 @@ ggsave("FSIP1_fusions_FFPM_ranked.svg", p, width=6, height=4)
 
 ```{r}
 
-tumor_ffpms = orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>% filter(tumor_or_normal == "tumor") %>% pull(FFPM)
+tumor_ffpms = orig_starF_preds %>% filter(fusion_name == "FSIP1::RP11-624L4.1") %>% filter(is_primary) %>% filter(tumor_or_normal == "tumor") %>% pull(FFPM)
 
-normal_ffpms = orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% filter(is_primary) %>% filter(tumor_or_normal == "normal") %>% pull(FFPM)
+normal_ffpms = orig_starF_preds %>% filter(fusion_name == "FSIP1::RP11-624L4.1") %>% filter(is_primary) %>% filter(tumor_or_normal == "normal") %>% pull(FFPM)
 
 wilcox.test(tumor_ffpms, normal_ffpms, alternative = 'greater')
 
@@ -95,7 +95,7 @@ expr_matrix_tidy$sample_name = colnames(expr_matrix)
 expr_matrix_tidy = expr_matrix_tidy %>% mutate(tumor_or_normal = ifelse(grepl("-NT$", sample_name), "normal", "tumor"))
 
 
-samples_with_fusion = orig_starF_preds %>% filter(fusion_name == "FSIP1--RP11-624L4.1") %>% select(sample_name) %>% unique() %>% pull(sample_name)
+samples_with_fusion = orig_starF_preds %>% filter(fusion_name == "FSIP1::RP11-624L4.1") %>% select(sample) %>% unique() %>% pull(sample)
 
 expr_matrix_tidy = expr_matrix_tidy %>% mutate(has_fusion = (sample_name %in% samples_with_fusion))
 

@@ -15,7 +15,7 @@ library(tidyverse)
 
 targeted_data = read.table(gzfile("../../data/FusionInspector.v2.4.0.C4_targeted_fusions.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
-targeted_data= targeted_data %>% mutate(fusion_variant = paste(sample_name, fusion_name, LeftBreakpoint, RightBreakpoint))
+targeted_data= targeted_data %>% mutate(fusion_variant = paste(sample, fusion_name, LeftBreakpoint, RightBreakpoint))
 
 
 
@@ -26,7 +26,7 @@ targeted_data= targeted_data %>% mutate(fusion_variant = paste(sample_name, fusi
 
 init_data = read.table(gzfile("../../data/FusionInspector.v2.4.0.examine_recurrents.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
-init_data= init_data %>% mutate(fusion_variant = paste(sample_name, fusion_name, LeftBreakpoint, RightBreakpoint))
+init_data= init_data %>% mutate(fusion_variant = paste(sample, fusion_name, LeftBreakpoint, RightBreakpoint))
 
 
 ```
