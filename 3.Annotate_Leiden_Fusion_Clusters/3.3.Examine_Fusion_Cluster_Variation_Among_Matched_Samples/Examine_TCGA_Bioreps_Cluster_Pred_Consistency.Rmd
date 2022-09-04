@@ -15,8 +15,7 @@ library(cowplot)
 
 ```{r}
 
-data = read.table(gzfile("../../data/FusionInspector.v2.4.0.TCGA_bioreps.tsv.gz"), header=T, sep="\t", stringsAsFactors = F, com='') %>%
-  rename(sample = X.sample, fusion_name = X.FusionName)
+data = read.table(gzfile("../../data/FusionInspector.v2.4.0.TCGA_bioreps.tsv.gz"), header=T, sep="\t", stringsAsFactors = F, com='') 
 
 
 ```
