@@ -21,6 +21,12 @@ fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.examine_recurren
 
 fusion_data$leiden = factor(fusion_data$leiden)
 
+
+# Can experiment with the code below to control for fusions having high prevalences among the samples. C4 still looks special here.
+# fusion_data = fusion_data %>% filter(is_primary) %>% group_by(fusion_name) %>% filter(row_number() <= 3) %>% ungroup()  ## TESTING
+
+
+
 umap.layout.cent = fusion_data %>% select(umap1, umap2, leiden) %>% group_by(leiden) %>% summarize_all(mean)
 
 
@@ -66,7 +72,7 @@ data$adj_right_counter_ffpm = log2(fusion_data$right_counter_ffpm+pseudocount)
 data$adj_FAR_left = log2(fusion_data$FAR_left+pseudocount)
 data$adj_FAR_right = log2(fusion_data$FAR_right+pseudocount)
 data$adj_microh_brkpt_dist = log2(fusion_data$microh_brkpt_dist+1)
-data$adj_num_microh = log2(fusion_data$num_microh+1)
+data$adj_num_microh = log2(fusion_data$num_microh_near_brkpt +1)
 
 # scale and center
 data.scaled = scale(data, center=T, scale=T)
