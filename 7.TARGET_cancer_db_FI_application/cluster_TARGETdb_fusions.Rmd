@@ -40,13 +40,6 @@ fusion_data = fusion_data %>% mutate(cosmic = (fusion_name %in% cosmic_fusions))
 
 ```{r}
 
-# simplify by restricting to those fusions found recurrent
-
-#recurrent_fusions = fusion_data %>% select(sample, fusion_name) %>% unique() %>% group_by(fusion_name) %>% tally() %>% filter(n>2); 
-#fusion_data  = fusion_data %>% filter(fusion_name %in% recurrent_fusions$fusion_name)
-
-#fusion_data = fusion_data %>% filter(FFPM >= 0.01)
-
 fusion_data = fusion_data %>% sample_frac(FRACTION_DATA_USE)
 
 
