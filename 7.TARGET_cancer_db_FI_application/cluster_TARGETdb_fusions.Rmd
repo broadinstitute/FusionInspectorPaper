@@ -19,16 +19,26 @@ library(pheatmap)
 
 ```{r}
 
-FRACTION_DATA_USE = 1.0
+FRACTION_DATA_USE = 0.20 # set to 1.0 to use all data
 
 fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
-fusion_data = fusion_data %>% group_by(sample, fusion_name) %>% arrange(desc(FFPM)) %>% mutate(is_primary = (row_number()==1)) %>% ungroup()
+# strip out earlier computed values when using here.
+fusion_data = fusion_data[, ! grepl("^adj", colnames(fusion_data))]
+fusion_data = fusion_data[, ! (colnames(fusion_data) %in% c('is_primary', 'cosmic', 'leiden', 'umap1', 'umap2'))]
 
 ```
 
 
 ```{r}
+
+# resurrect attributes as defined below:
+
+# set primary fusion variant
+fusion_data = fusion_data %>% group_by(sample, fusion_name) %>% arrange(desc(FFPM)) %>% mutate(is_primary = (row_number()==1)) %>% ungroup()
+
+
+# set known cosmic attribute
 
 cosmic_fusions = read.table("../data/cosmic.list", header=F, stringsAsFactors = F)[,1]
 
