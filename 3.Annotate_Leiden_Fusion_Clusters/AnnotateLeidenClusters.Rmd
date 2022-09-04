@@ -278,12 +278,7 @@ cosmic_like_clusters
 # annotate
 
 # cosmic-peak-enriched cluster 4
-# rest cosmic like clusters contain at least 2 cosmic fusions as per above.
-cosmic_like_clusters = c(4, 6, 39, 38, 23, 8, 54, 13, 46, 34, 21, 7, 26, 10, 12, 3, 18)
-pheatmap(all_median_vals_df[rownames(all_median_vals_df) %in% cosmic_like_clusters,],
-         cluster_cols=colclust,
-         main="cosmic-like"   
-             )
+
 
 # expr_microH_RT_artifact_clusters
 expr_microH_RT_artifact_clusters =  c(47,20,41,15)
@@ -301,12 +296,7 @@ pheatmap(all_median_vals_df[rownames(all_median_vals_df) %in% high_FAR_microH_bi
         main="high FAR and microH, likely bioinf artifacts" 
              )
 
-# high counter-evidence clusters
-high_counter_evidence_clusters = c(49,51)
-pheatmap(all_median_vals_df[rownames(all_median_vals_df) %in% high_counter_evidence_clusters,],
-         cluster_cols=colclust,
-         main="high counter-evidence"
-             )
+
 
 
 source("../Rlib/annotate_leiden_clusters.R")
@@ -326,7 +316,7 @@ fusion_data %>% filter(is_primary) %>% group_by(fusion_cluster_att) %>% tally() 
 # Fraction of fusions in artifact-like clusters:
 
 artifact_fusion_data = fusion_data %>% filter(is_primary) %>% group_by(fusion_cluster_att) %>% tally() %>% mutate(pct=prop.table(n)) %>%
-    filter(fusion_cluster_att %in% c('expr_microH_RT_artifact?', 'high_counter_evidence', 'high_FAR_microH_bioinf_artifact?')) 
+    filter(fusion_cluster_att %in% c('expr_microH_RT_artifact?', 'high_FAR_microH_bioinf_artifact?')) 
 
 artifact_fusion_data
 
@@ -393,10 +383,10 @@ plot_fusion_scaled_atts = function(fusion_name) {
 
 ```{r}
 
-plot_fusion_scaled_atts("TMPRSS2--ERG")
+plot_fusion_scaled_atts("TMPRSS2::ERG")
 
-plot_fusion_scaled_atts("SS18--SSX1")
-plot_fusion_scaled_atts("SS18--SSX2")
+plot_fusion_scaled_atts("SS18::SSX1")
+plot_fusion_scaled_atts("SS18::SSX2")
 
 ```
 

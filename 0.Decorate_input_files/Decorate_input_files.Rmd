@@ -18,6 +18,10 @@ To simplify downstream analyses, here we incorporate some additional attributes 
 orig_starF_fusions_FULL= read.table(gzfile("../data/fusions_consolidated.Sep2019.dat.gz"), 
                                      header=T, sep="\t", stringsAsFactors = F, check.names = F)
 
+orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% rename(sample = sample_name)
+
+orig_starF_fusions_FULL$fusion_name = str_replace(orig_starF_fusions_FULL$fusion_name, "--", "::")
+
 ```
 
 
@@ -35,7 +39,6 @@ This explores all combinations of isoforms between the fusion partners joined at
 # include coding info
 coding_info = read.table(gzfile("../data/fusions.coding_effects.abridged.tsv.gz"), header=T, sep="\t", com='')
 
-coding_info = coding_info %>% rename(fusion_name=X.FusionName) 
 coding_info = coding_info %>% select(fusion_name, LeftBreakpoint, RightBreakpoint, PROT_FUSION_TYPE)
 
 coding_info$PROT_FUSION_TYPE = factor(str_replace( as.character(coding_info$PROT_FUSION_TYPE), "\\.", "INCL_NONCODING") )
@@ -53,10 +56,10 @@ Below we include a 'tumor_or_normal' column to indicate whether the sample corre
 # include tumor or normal sample definition
 # define as tumor or normal sample
 orig_starF_fusions_FULL= orig_starF_fusions_FULL%>% 
-  mutate(tumor_or_normal = ifelse(data_class=="GTEx" | grepl("-NT$", sample_name), "normal", "tumor"))
+  mutate(tumor_or_normal = ifelse(data_class=="GTEx" | grepl("-NT$", sample), "normal", "tumor"))
 
 # count number of tumor and normal samples.
-tumor_normal_sample_counts = orig_starF_fusions_FULL%>% select(sample_name, tumor_or_normal) %>% unique() %>% group_by(tumor_or_normal) %>% tally()
+tumor_normal_sample_counts = orig_starF_fusions_FULL%>% select(sample, tumor_or_normal) %>% unique() %>% group_by(tumor_or_normal) %>% tally()
 
 total_tumor_samples = tumor_normal_sample_counts %>% filter(tumor_or_normal == "tumor") %>% pull(n)
 total_normal_samples = tumor_normal_sample_counts %>% filter(tumor_or_normal == "normal") %>% pull(n)
@@ -75,8 +78,8 @@ The column 'is_primary' is added to differentiate primary (TRUE) from lesser exp
 ```{r}
 
 
-orig_starF_fusions_FULL= orig_starF_fusions_FULL%>% 
-  group_by(fusion_name, sample_name) %>% 
+orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% 
+  group_by(fusion_name, sample) %>% 
   arrange(FFPM) %>% mutate(is_primary = (row_number() == n())) %>% ungroup()
 
 cosmic_fusions = read.table("../data/cosmic.list", header=F)[,1]

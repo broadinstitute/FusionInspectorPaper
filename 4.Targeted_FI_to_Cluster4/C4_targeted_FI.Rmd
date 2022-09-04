@@ -28,24 +28,11 @@ fusion_annot_class_stats = fusion_data %>% filter(is_primary) %>%
     mutate(annot_type = fusion_cluster_att) %>%
     mutate(annot_type = ifelse((is.na(fusion_cluster_att) | fusion_cluster_att == "NA"), "other", fusion_cluster_att)) %>%
     mutate(annot_type = ifelse(grepl("artifact", fusion_cluster_att), "artifact", annot_type)) %>%
-    mutate(annot_type = ifelse(grepl("cosmic", fusion_cluster_att), "cosmic-like", annot_type)) %>%
     group_by(fusion_name, cosmic, annot_type) %>% tally() %>% mutate(frac=prop.table(n)) %>%
     select(-n) %>%
-    spread(key=annot_type, value=frac, fill=0) %>%
-    arrange(desc(`cosmic-like`))
-
-fusion_fraction_C4 = fusion_data %>% 
-    filter(is_primary) %>%
-    mutate(in_c4 = (pred_cluster == 4)) %>%
-    group_by(fusion_name, in_c4) %>%
-    tally() %>%
-    mutate(frac=prop.table(n)) %>%
-    select(fusion_name, in_c4, frac) %>%
-    spread(key=in_c4, value=frac, fill=0) %>%
-    select(fusion_name, frac_in_C4 = `TRUE`)
+    spread(key=annot_type, value=frac, fill=0) 
 
 
-fusion_annot_class_stats = left_join(fusion_annot_class_stats, fusion_fraction_C4, by='fusion_name')
 
 fusion_annot_class_stats
 
@@ -94,7 +81,7 @@ write.table(orig_STARF_tumor_normal_stats, "fusions_236_logTN_stats.tsv", quote=
 ```{r}
 
 fusion_annot_class_stats_gathered = fusion_annot_class_stats %>%
-    gather(key=cluster_annot_type, value=frac_fusions, artifact, `cosmic-like`, high_counter_evidence, other, frac_in_C4)
+    gather(key=cluster_annot_type, value=frac_fusions, `cosmic-peak-enriched`, artifact, other)
 ```
 
 
