@@ -349,6 +349,9 @@ df_FFPM = bind_rows( data.frame(dataclass="Cosmic", FFPM=cosmic_fusion_FFPM),
 
                      
 p = df_FFPM %>% mutate(FFPM_max1 = pmin(1, FFPM)) %>% ggplot(aes(x=FFPM_max1, color=dataclass)) + geom_density(alpha=0.2) + xlim(0, 1) + xlab("Density") + ylab("FFPM") +
+  theme_bw() +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
   theme(legend.title = element_text(size = rel(0.7)),
          legend.text  = element_text(size = rel(0.7)),
          text=element_text(family="Times New Roman"))
@@ -380,6 +383,9 @@ df_ecdf = bind_rows( data.frame(dataclass="Cosmic", minFFPM=ecdf_range, cum_frac
 
 p = df_ecdf %>% ggplot(aes(x=minFFPM, y=cum_frac, color=dataclass)) + geom_point() + 
        xlab("Minimum FFPM") + ylab("Cumulative Fraction") +
+   theme_bw() + 
+   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
    theme(legend.title = element_text(size = rel(0.7)),
          legend.text  = element_text(size = rel(0.7)),
          text=element_text(family="Times New Roman"))
@@ -453,6 +459,9 @@ ranked_fusions = cosmic_fusion_occurrence %>%
 p = cosmic_fusion_occurrence %>% 
     ggplot(aes(x=factor(fusion_name, levels=ranked_fusions$fusion_name), y=sample_pct, fill=sample_tissue)) + 
     geom_col() + 
+    theme_bw() + 
+    theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
     theme(axis.text.x=element_text(angle = 90, hjust = 0, size=rel(0.75))) +
     xlab("COSMIC Fusion") + ylab("% of Samples") +
    theme(legend.title = element_text(size = rel(0.7)),
