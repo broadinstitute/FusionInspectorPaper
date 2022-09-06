@@ -360,7 +360,7 @@ p = df_FFPM %>% mutate(FFPM_max1 = pmin(1, FFPM)) %>%
 
 plot(p)
 
-ggsave("fuson_expr_density.svg", p, width=7.65, height=5.1)
+ggsave("fusion_expr_density.svg", p, width=7.65, height=5.1)
 
 ```
 
