@@ -348,7 +348,9 @@ df_FFPM = bind_rows( data.frame(dataclass="Cosmic", FFPM=cosmic_fusion_FFPM),
                      data.frame(dataclass="TCGA-normal", FFPM=TCGA_normal_FFPM) ) 
 
                      
-p = df_FFPM %>% mutate(FFPM_max1 = pmin(1, FFPM)) %>% ggplot(aes(x=FFPM_max1, color=dataclass)) + geom_density(alpha=0.2) + xlim(0, 1) + xlab("Density") + ylab("FFPM") +
+p = df_FFPM %>% mutate(FFPM_max1 = pmin(1, FFPM)) %>% 
+  ggplot(aes(x=FFPM_max1, color=dataclass)) + 
+  geom_density(alpha=0.2) + xlim(0, 1) + ylab("Density") + xlab("FFPM") +
   theme_bw() +
   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
