@@ -24,9 +24,19 @@ data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), header
 
 umap_data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.umap_coords.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
+TARGETdb_sample_info = read.table("../data/TARGETdb.sample_info.tsv", sep="\t", header=T, stringsAsFactors = F )
+
+data = left_join(data, TARGETdb_sample_info, by='sample')
+
+data = data %>% mutate(tumor_or_normal = ifelse(grepl("Normal", sample_type), "normal", "tumor"))
+
 ```
 
+```{r}
 
+all_cosmic_fusions = read.table("../data/cosmic.list", header=F, stringsAsFactors = F)[,1]
+
+```
 
 
 ```{r}
@@ -366,7 +376,151 @@ cosmic_counts_by_cluster$pval_BH = p.adjust(cosmic_counts_by_cluster$pval, metho
 
 cosmic_counts_by_cluster %>% arrange(pval_BH)
 
-# cluster 21, adj pval- 2.8e-180
+# cluster 21, adj pval- 2.5e-182
 ```
+
+# Examine COSMIC and COSMIC-like fusions in cluster 21
+
+```{r}
+
+COSMIC_cluster = "21"
+
+
+data %>% filter(cosmic & is_primary) %>% group_by(fusion_name, sample_type) %>%  tally() %>%
+  ggplot(aes(x=fusion_name, y=n, fill=sample_type)) + geom_col() +
+   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+
+```{r}
+# examine cosmic fusions according to teh clusters they fall in
+
+data %>% filter(is_primary & cosmic) %>% group_by(fusion_name, leiden) %>% tally() %>%
+  ggplot(aes(x=fusion_name, y=n, fill=factor(leiden))) + geom_col() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+
+```
+
+
+
+```{r}
+
+fusion_sample_type_counts = data %>% filter(is_primary) %>% group_by(fusion_name, leiden, sample_type) %>% tally(name='fusion_sample_type_counts')
+
+sample_type_counts = data %>% select(sample, sample_type) %>% unique() %>% group_by(sample_type) %>% tally(name='sample_type_counts')
+
+fusion_sample_type_counts = left_join(fusion_sample_type_counts, sample_type_counts, by='sample_type')
+
+
+fusion_sample_type_counts = fusion_sample_type_counts %>% mutate(sample_type_frac = fusion_sample_type_counts / sample_type_counts)
+
+fusion_sample_type_counts = fusion_sample_type_counts %>% mutate(cosmic = (fusion_name %in% all_cosmic_fusions))
+
+
+```
+
+
+
+```{r}
+
+# examine cosmic fusions according to sample type representation
+
+fusion_sample_type_counts %>% filter(cosmic) %>% ggplot(aes(x=fusion_name, y=sample_type_frac, fill=sample_type)) + geom_col() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+```{r}
+# list the most prevalent cosmic fusions by sample type
+fusion_sum_sample_type_fractions = fusion_sample_type_counts %>% 
+  select(fusion_name, sample_type_frac, sample_type) %>% group_by(fusion_name, sample_type) %>% summarize(sum_frac = sum(sample_type_frac)) %>% arrange(desc(sum_frac))
+```
+
+```{r}
+fusion_sum_sample_type_fractions %>% filter(fusion_name %in% all_cosmic_fusions) 
+
+```
+
+# Explore new potential fusions of interest
+
+- exclude those found in normals here
+- rank by tumor sample fractions and proportion in C21
+
+
+```{r}
+
+fusions_found_in_normals = data %>% filter(tumor_or_normal == "normal") %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
+
+length(fusions_found_in_normals)
+# 1036
+```
+
+```{r}
+
+fusion_fraction_C21 = data %>% filter(is_primary) %>%  group_by(fusion_name, leiden) %>% tally() %>% mutate(frac_leiden_C21=prop.table(n)) %>% filter(leiden==COSMIC_cluster)
+
+fusion_fraction_C21
+```
+```{r}
+
+fusion_fraction_C21  = fusion_fraction_C21 %>% mutate(cosmic = (fusion_name %in% all_cosmic_fusions) )
+
+fusion_fraction_C21 %>% filter(cosmic) %>% arrange(frac_leiden_C21)
+
+# min of 18% here
+
+```
+
+```{r}
+
+tcga_gtex_fusion_stats = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+
+fusion_fraction_C21  = left_join(fusion_fraction_C21, tcga_gtex_fusion_stats, by='fusion_name')
+
+fusion_fraction_C21
+```
+
+```{r}
+
+# examine the cosmic-here set wrt our earlier tcga/gtex findings
+
+fusion_fraction_C21 %>% filter(cosmic) %>% arrange(desc(n))
+
+
+```
+
+```{r}
+
+# find some new candidates of interest
+
+top_new_candidates = fusion_fraction_C21 %>% filter(! cosmic) %>% 
+  filter(! fusion_name %in% fusions_found_in_normals) %>%
+  filter(n>=3) %>%
+  filter(is.na(logTN) || logTN > 0) %>%
+  
+  arrange(desc(n))
+
+top_new_candidates
+```
+
+```{r}
+
+top_new_candidates = left_join(top_new_candidates, fusion_sum_sample_type_fractions,  by='fusion_name', )
+
+top_new_candidates 
+```
+
+
+```{r}
+write.table(top_new_candidates, file="TARGET.top_new_candidates.tsv", quote=F, sep="\t", row.names = F)
+
+```
+
+
 
 
