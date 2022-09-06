@@ -1,0 +1,372 @@
+---
+title: "Examine_Clustered_TARGETdb_Fusions"
+author: "bhaas"
+date: '2022-09-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggrepel)
+library(pheatmap)
+library(cowplot)
+```
+
+
+```{r}
+
+data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+# can restrict to only n primary fusion occurrences to examine how it impacts our findings.
+# data = data %>% filter(is_primary) %>% group_by(fusion_name) %>% filter(row_number() <= 3) %>% ungroup()
+
+
+umap_data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.umap_coords.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+```
+
+
+
+
+```{r}
+
+data = left_join(data, umap_data %>% filter(umap_frac_data == 0.5), by=c('sample', 'fusion_name', 'LeftBreakpoint', 'RightBreakpoint'))
+
+
+```
+
+
+
+```{r}
+
+umap.layout.cent = data %>% filter(! is.na(umap1)) %>% 
+  select(umap1, umap2, leiden) %>% group_by(leiden) %>% summarize_all(mean)
+
+```
+
+
+```{r}
+
+umap_plot = data %>% filter(! is.na(umap1)) %>%
+  ggplot(aes(x=umap1, y=umap2)) + 
+  geom_point(alpha = 0.3, size=0.05, aes(color=factor(leiden))) + theme_bw() +
+  xlim(quantile(data$umap1, c(0.005, 0.995), na.rm = T)) +
+  ylim(quantile(data$umap2, c(0.005, 0.995), na.rm=T))  +
+  geom_label_repel(data=umap.layout.cent, aes(label = leiden), max.overlaps = Inf) + 
+                             guides(colour = FALSE)
+
+
+plot(umap_plot)
+```
+
+
+
+
+```{r}
+
+# highlight the cosmic entries
+
+cosmic_subset = data %>% filter(cosmic == TRUE & is_primary)
+
+p = umap_plot + geom_point(data=cosmic_subset, color='black')
+
+plot(p)
+
+
+```
+
+
+```{r}
+
+ggsave(p, file="TARGETdb_umap_plot.pdf", width=12, height=10)
+
+
+```
+
+
+
+
+```{r}
+
+
+max_cluster = max(data$leiden)
+
+all_median_vals_df = NULL
+
+data.scaled = data[, grepl("^adj", colnames(data))]
+
+
+for (cluster_i in seq(max_cluster)) {
+
+    #message("cluster: ", cluster_i)
+    
+    cluster_row_indices = which(data$leiden == cluster_i)
+    
+    feature_atts = data.scaled[cluster_row_indices,]
+    
+    median_vals = as_tibble(feature_atts) %>% gather() %>% group_by(key) %>% summarize(m=median(value))
+
+    df = data.frame(median_vals$m, row.names=median_vals$key)
+    df = as.data.frame(t(df))
+    df$cluster = cluster_i
+
+    all_median_vals_df = bind_rows(all_median_vals_df, df)
+
+}
+
+
+rownames(all_median_vals_df) = all_median_vals_df$cluster
+
+all_median_vals_df = all_median_vals_df[,!c(colnames(all_median_vals_df)=='cluster')]
+
+```
+
+
+
+```{r}
+
+median_vals_pca = prcomp(t(all_median_vals_df))
+rows_d = dist(median_vals_pca$rotation[,1:6])
+rowclust = hclust(as.dist(rows_d), "ward.D")
+
+
+cols_d = dist(t(all_median_vals_df))
+
+colclust = hclust(as.dist(cols_d), "ward.D")
+
+
+
+p = pheatmap(all_median_vals_df, 
+             cluster_rows=rowclust,
+             cluster_cols=colclust,
+             )
+
+
+```
+
+plot cosmic primary isoform fusion counts according to cluster
+
+```{r}
+
+
+cosmic_counts_per_cluster = cosmic_subset %>%
+    group_by(fusion_name, leiden) %>% 
+    tally()
+
+cosmic_counts_per_cluster$leiden = factor(cosmic_counts_per_cluster$leiden, levels=rev(p$tree_row$labels[p$tree_row$order]))
+
+empty_counts_df = data.frame(fusion_name="NA", leiden=factor(seq(max_cluster), levels=rev(p$tree_row$labels[p$tree_row$order])), n=0)
+
+cosmic_counts_per_cluster = bind_rows(empty_counts_df, cosmic_counts_per_cluster)
+
+
+
+# plot it
+
+
+cosmic_primary_fusion_counts_per_cluster_plot = cosmic_counts_per_cluster %>% ggplot(aes(x=leiden, y=n, fill=fusion_name)) + geom_col() + coord_flip() + ggtitle("COSMIC primary isoform count")
+
+
+plot(cosmic_primary_fusion_counts_per_cluster_plot)
+```
+
+
+```{r}
+
+# without colors
+
+cosmic_sum_counts_per_cluster = cosmic_counts_per_cluster %>% group_by(leiden) %>% summarize(sum_n = sum(n))
+
+
+cosmic_sum_counts_per_cluster_plot = cosmic_sum_counts_per_cluster %>% ggplot(aes(x=leiden, y=sum_n)) + geom_col() + coord_flip() + ggtitle("COSMIC primary isoform count")
+
+
+
+plot(cosmic_sum_counts_per_cluster_plot)
+
+
+```
+
+
+
+
+```{r}
+
+# all fusions, top isoforms
+
+
+top_fusion_counts_per_cluster = data %>% 
+    filter(is_primary) %>%
+    select(fusion_name, leiden) %>% 
+    group_by(fusion_name, leiden) %>% 
+    tally()
+
+top_fusion_counts_per_cluster$leiden = factor(top_fusion_counts_per_cluster$leiden, levels=rev(p$tree_row$labels[p$tree_row$order]))
+
+empty_counts_df = data.frame(fusion_name="NA", leiden=factor(seq(max_cluster), levels=rev(p$tree_row$labels[p$tree_row$order])), n=0)
+
+
+top_fusion_counts_per_cluster = bind_rows(empty_counts_df, top_fusion_counts_per_cluster)
+
+sum_fusion_counts_per_cluster = top_fusion_counts_per_cluster %>% group_by(leiden) %>% summarize(sum_n = sum(n))
+
+sum_fusion_counts_per_cluster_plot = sum_fusion_counts_per_cluster %>% ggplot(aes(x=leiden, y=sum_n)) + geom_col() + coord_flip() + ggtitle("Fusion primary isoform count")
+
+plot(sum_fusion_counts_per_cluster_plot)
+```
+
+plot cosmic enrichment per cluster
+
+```{r}
+
+cosmic_sum_counts_per_cluster$fusion_type = "cosmic"
+sum_fusion_counts_per_cluster$fusion_type = "all"
+cosmic_and_all_counts_df = bind_rows(cosmic_sum_counts_per_cluster, sum_fusion_counts_per_cluster)
+
+cosmic_and_all_counts_df = cosmic_and_all_counts_df %>% spread(key=fusion_type, value=sum_n)
+cosmic_and_all_counts_df = cosmic_and_all_counts_df %>% mutate(frac_cosmic = cosmic/all)
+
+cosmic_frac_enrichment_plot = cosmic_and_all_counts_df %>% ggplot(aes(x=leiden, y=frac_cosmic)) + 
+    geom_col() + coord_flip() + ggtitle("Fraction COSMIC fusions")
+plot(cosmic_frac_enrichment_plot)
+```
+
+
+Create single summary plot
+
+```{r}
+
+
+cosmic_sum_counts_per_cluster_plot_NoLegend = cosmic_sum_counts_per_cluster_plot + 
+    theme(legend.position = "none")
+
+pg = plot_grid(p[[4]], cosmic_sum_counts_per_cluster_plot_NoLegend, sum_fusion_counts_per_cluster_plot, cosmic_frac_enrichment_plot, 
+          nrow=1, rel_widths = c(3,1,1,1) )
+
+plot(pg)
+
+```
+
+
+```{r}
+
+ggsave(pg, file="TARGETdb_heatmap_collage_plot.pdf", width=20, height=13)
+
+```
+
+
+```{r}
+
+frac_cluster_predictions = data %>% filter(is_primary) %>% group_by(leiden, fusion_cluster_att) %>% tally() %>%
+  mutate(pct=prop.table(n)) 
+
+#empty_counts_df = data.frame(leiden=factor(seq(max_cluster), levels=rev(p$tree_row$labels[p$tree_row$order])), pct=0, fusion_cluster_att=NA)
+
+#frac_cluster_predictions = bind_rows(empty_counts_df, frac_cluster_predictions)
+
+
+frac_cluster_predictions$leiden = factor(frac_cluster_predictions$leiden, levels=rev(p$tree_row$labels[p$tree_row$order]))
+
+frac_cluster_att_predictions_plot = frac_cluster_predictions  %>%
+  mutate(pct = ifelse(is.na(fusion_cluster_att ), 0, pct)) %>%
+  ggplot(aes(x=leiden, y=pct, fill=fusion_cluster_att)) + geom_col() + coord_flip() 
+
+
+plot(frac_cluster_att_predictions_plot)
+
+```
+
+```{r}
+
+cosmic_sum_counts_per_cluster_plot_NoLegend = cosmic_sum_counts_per_cluster_plot + 
+    theme(legend.position = "none")
+
+pg = plot_grid(p[[4]], cosmic_sum_counts_per_cluster_plot_NoLegend, sum_fusion_counts_per_cluster_plot, cosmic_frac_enrichment_plot, 
+               frac_cluster_att_predictions_plot + theme(legend.position = "none"),
+          nrow=1, rel_widths = c(3,1,1,1,1) )
+
+plot(pg)
+
+
+
+```
+
+# Examine COSMIC enrichment stat significance
+
+```{r}
+
+# combine into single table and examine fraction cosmic fusions per cluster
+
+cosmic_counts_by_cluster = full_join(cosmic_sum_counts_per_cluster %>% select(leiden, sum_cosmic = sum_n), 
+                                     sum_fusion_counts_per_cluster %>% select(leiden, sum_fusions = sum_n) , by='leiden')
+
+
+total_cosmic = cosmic_counts_by_cluster %>% summarize(tot_cosmic = sum(sum_cosmic), tot_fusions = sum(sum_fusions))
+
+cosmic_counts_by_cluster = cosmic_counts_by_cluster  %>% mutate(frac_cosmic = sum_cosmic / sum_fusions)
+
+cosmic_counts_by_cluster = bind_cols(cosmic_counts_by_cluster, total_cosmic)
+
+cosmic_counts_by_cluster %>% arrange(desc(sum_cosmic))
+
+```
+
+
+```{r}
+
+# statistical significance of COSMIC fusion enrichment
+
+
+
+
+run_fishers_exact_test = function(cosmic_count, fusion_count, tot_cosmic_fusions, total_fusions) {
+    
+    message("cosmic_count: ", cosmic_count)
+    message("fusion count: ", fusion_count)
+  
+    
+    non_cosmic_count = fusion_count - cosmic_count
+    tot_noncosmic_fusions  = total_fusions - tot_cosmic_fusions
+    
+    confusion_matrix = matrix(c(cosmic_count, non_cosmic_count,
+                                tot_cosmic_fusions - cosmic_count, tot_noncosmic_fusions - non_cosmic_count),
+                              nrow=2, byrow = T)    
+    print(confusion_matrix)
+    
+    f = fisher.test(confusion_matrix, alternative = 'greater')
+    
+    return(f$p.value)
+    
+}
+
+
+cosmic_counts_by_cluster = cosmic_counts_by_cluster  %>% rowwise() %>% mutate(
+  pval = run_fishers_exact_test(
+         sum_cosmic, sum_fusions, tot_cosmic, tot_fusions)
+)  %>% mutate(negLOGp = -1 * log10(pval))
+
+
+cosmic_counts_by_cluster %>% arrange(desc(negLOGp))
+
+
+```
+
+```{r}
+cosmic_counts_by_cluster %>% ggplot(aes(x=leiden, y=negLOGp)) + geom_col() +
+  ggtitle("TARGET COSMIC fusion enrichment per predicted clusters") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+
+```
+
+```{r}
+cosmic_counts_by_cluster$pval_BH = p.adjust(cosmic_counts_by_cluster$pval, method="BH")
+
+cosmic_counts_by_cluster %>% arrange(pval_BH)
+
+# cluster 21, adj pval- 2.8e-180
+```
+
+
