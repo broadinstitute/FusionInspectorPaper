@@ -24,11 +24,19 @@ data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), header
 
 umap_data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.umap_coords.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
+# add TARGET db sample info
+
 TARGETdb_sample_info = read.table("../data/TARGETdb.sample_info.tsv", sep="\t", header=T, stringsAsFactors = F )
 
 data = left_join(data, TARGETdb_sample_info, by='sample')
 
 data = data %>% mutate(tumor_or_normal = ifelse(grepl("Normal", sample_type), "normal", "tumor"))
+
+# add the generic fusion annotations
+
+fusion_annotations = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.fusion_annotations.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+data = left_join(data, fusion_annotations, by='fusion_name')
 
 ```
 
