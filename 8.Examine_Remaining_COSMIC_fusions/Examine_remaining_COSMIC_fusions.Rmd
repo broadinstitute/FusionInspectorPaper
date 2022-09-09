@@ -103,12 +103,36 @@ new_data_COSMIC %>% group_by(fusion_name, fusion_cluster_att) %>% tally() %>%
 
 ```{r}
 
+# fraction of fusion occurrences
+
 new_data_COSMIC %>% group_by(fusion_cluster_att) %>% tally() %>% 
  mutate(pct=prop.table(n))
 
 
 
 ```
+
+
+```{r}
+
+# fraction of fusion types (gene pairs) have COSMIC-like instances?
+
+num_distinct_fusions_pred_C4 = new_data_COSMIC %>% filter(pred_cluster == 4) %>% select(fusion_name) %>% unique() %>% nrow()
+
+message("num distinct C4 predicted fusions: ", num_distinct_fusions_pred_C4)
+
+total_distinct_fusions =  new_data_COSMIC %>% select(fusion_name) %>% unique() %>% nrow()
+
+message("num total distinct fusions here: ", total_distinct_fusions)
+
+
+fraction_fusions_with_C4_pred = num_distinct_fusions_pred_C4 / total_distinct_fusions
+
+message("fraction of distinct fusions pred as C4: ", fraction_fusions_with_C4_pred)
+
+
+```
+
 
 
 ```{r}

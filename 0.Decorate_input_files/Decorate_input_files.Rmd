@@ -130,9 +130,9 @@ The final 'structure_type' categories include:
 ```{r}
 orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% mutate(annot_adj = Annots)
 
-orig_starF_fusions_FULL$annot_adj = str_replace(orig_starF_fusions_FULL$Annots, 
-                                                      "NEIGHBORS_OVERLAP", "LOCAL_REARRANGMENT")
-orig_starF_fusions_FULL$annot_adj = str_replace(orig_starF_fusions_FULL$Annots, "LOCAL_INVERSION", "LOCAL_REARRANGMENT") 
+orig_starF_fusions_FULL$annot_adj = str_replace(orig_starF_fusions_FULL$annot_adj, 
+                                                      "NEIGHBORS_OVERLAP", "LOCAL_REARRANGEMENT")
+orig_starF_fusions_FULL$annot_adj = str_replace(orig_starF_fusions_FULL$annot_adj, "LOCAL_INVERSION", "LOCAL_REARRANGEMENT") 
 
 
 orig_starF_fusions_FULL$structure_type = "OTHER"
@@ -144,7 +144,7 @@ orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% mutate(structure_type = if
                                                                                "INTERCHR", structure_type))
 
 
-orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% mutate(structure_type = ifelse(grepl("LOCAL_REARRANGMENT", annot_adj),
+orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% mutate(structure_type = ifelse(grepl("LOCAL_REARRANGEMENT", annot_adj),
                                                                                "LOCAL_REARRANGEMENT", structure_type))
 
 orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% mutate(structure_type = ifelse(grepl("NEIGHBORS", annot_adj), 
