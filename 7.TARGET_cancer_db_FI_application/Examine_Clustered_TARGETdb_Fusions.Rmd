@@ -632,9 +632,14 @@ write.table(fusion_fraction_C21 %>% filter(cosmic) %>% arrange(desc(count_in_C21
 top_new_candidates = fusion_fraction_C21 %>%  
   filter(! fusion_name %in% fusions_found_in_normals) %>%
   filter(tot_sample_count >= 3) %>%
+  filter(frac_leiden_C21 >= 0.10) %>%
   #filter(is.na(logTN) || logTN > 0) %>%
   filter(normal == 0 | is.na(normal)) %>%
   arrange(desc(tot_sample_count))
+
+
+#top_new_candidates = top_new_candidates %>% filter(! grepl("NEIGHBORS", annots))
+
 
 top_new_candidates
 ```
@@ -657,7 +662,6 @@ top_new_candidates
 # include annotations
 top_new_candidates = left_join(top_new_candidates, fusion_annotations, by='fusion_name')
 
-top_new_candidates = top_new_candidates %>% filter(! grepl("NEIGHBORS", annots))
 
 
 top_new_candidates 
@@ -679,6 +683,7 @@ top_new_candidates = left_join(top_new_candidates, sum_sum_frac, by='fusion_name
 ```{r}
 
 candidates_sample_frac_plot = top_new_candidates  %>% 
+  group_by(fusion_name, project) %>% arrange(desc(sum_frac)) %>% filter(row_number()==1) %>% ungroup() %>%
   ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=sum_frac, fill=project)) + geom_col() +  
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
@@ -746,24 +751,7 @@ reciprocal_fusion_plot
 ```
 
 
-```{r}
-# combine plots into a single figure
 
-
-pg = plot_grid(cosmic_entries_plot,
-               reciprocal_fusion_plot,
-              candidates_sample_frac_plot,
-                 nrow=3,
-                 align='v',
-                 axis='lr',
-                 rel_heights = c(0.15, 0.15,0.70)
-                 )
-
-
-plot(pg)
-
-
-```
 
 
 Want COSMIC-like cluster stats and frame change stats too.
@@ -893,7 +881,12 @@ plot(pg)
 
 ```
 
+```{r}
 
+ggsave(pg, file="TARGET_summary_plot.pdf", height=8, width=14)
+
+
+```
 
 ```{r}
 
