@@ -546,6 +546,16 @@ fusion_sum_sample_type_fractions %>% filter(fusion_name %in% all_cosmic_fusions)
 ```
 
 
+
+
+
+
+
+
+
+
+
+
 ############################################
 # Explore new potential fusions of interest
 ############################################
@@ -720,15 +730,35 @@ cosmic_entries_plot
 
 ```{r}
 
-# examine reciprocal translocations
+# examine reciprocal translocations for C21
 
 
-reciprocal_fusions_data = data %>% filter(is_primary) %>% group_by(sample, sorted_fusion_name) %>% tally() %>% filter(n>1) %>% ungroup()
+# define fusion gene pairs found in C21 samples
+C21_fusion_containing_samples_n_sorted_fusions =  data %>% filter(leiden==COSMIC_cluster) %>% select(sample, sorted_fusion_name) %>% unique() 
 
-reciprocal_fusions_data = left_join(reciprocal_fusions_data, data, by=c('sample', 'sorted_fusion_name'))
 
+# define the reciprocal fusions among these
+# - restricted to C21 samples
+# - the fusion_name A::B and B::A must show up in the same sample
+reciprocal_fusions_data = left_join( data, C21_fusion_containing_samples_n_sorted_fusions, by=c('sample', 'sorted_fusion_name')) %>%
+       filter(is_primary) %>%
+       group_by(sample, fusion_name, sorted_fusion_name) %>% unique() %>% group_by(sample, sorted_fusion_name) %>% tally() %>% filter(n>1) %>% ungroup()
+
+# capture both A::B and B::A occurrences of fusions for these samples.
+reciprocal_fusions_data = left_join(reciprocal_fusions_data, 
+                                    data, 
+                                    by=c('sample', 'sorted_fusion_name'))
+
+
+
+# now further restrict to those fusions among our top candidates as earlier defined.
+top_new_candidate_sorted_fusions = top_new_candidates %>% select(sorted_fusion_name) %>% unique() %>% pull(sorted_fusion_name)
+
+reciprocal_fusions_data = reciprocal_fusions_data %>% filter(sorted_fusion_name %in% top_new_candidate_sorted_fusions)
 
 reciprocal_fusions_data %>% filter(is_primary) %>% arrange(sample, sorted_fusion_name)
+
+
 
 
 ```
@@ -762,10 +792,45 @@ reciprocal_fusion_plot
 ```
 
 
+```{r}
+
+
+# examine fusion sample correlation matrix for only the reciprocal fusion subset
+
+#fusion_reciprocal_sample_C21_info = data %>% 
+#  filter(is_primary & 
+#           sorted_fusion_name %in% reciprocal_fusions_data$sorted_fusion_name & 
+#           sorted_fusion_name %in% top_new_candidates$sorted_fusion_name) %>% 
+#  select(fusion_name, project, sample, sorted_fusion_name) %>% unique() 
+
+#write.table(fusion_reciprocal_sample_C21_info %>% select(project, fusion_name) %>% unique(), 
+#  file="C21_project_fusion.reciprocal.info.tsv", quote=F, sep="\t", col.names=F, row.names=F)
+
+
+write.table(reciprocal_fusions_data %>% select(project, fusion_name) %>% unique(), 
+  file="C21_project_fusion.reciprocal.info.tsv", quote=F, sep="\t", col.names=F, row.names=F)
 
 
 
-Want COSMIC-like cluster stats and frame change stats too.
+write.table(reciprocal_fusions_data %>% select(fusion_name, sample) %>%  mutate(found=1) %>% unique() %>% spread(key=sample, value=found, fill=0),
+            file="C21_project_fusion.reciprocal.sample_matrix.tsv", quote=F, sep="\t", row.names=F)
+
+
+fusion_sample_matrix = read.table("C21_project_fusion.reciprocal.sample_matrix.tsv", row.names=1, header=T, sep="\t")
+write.table(t(fusion_sample_matrix), file="C21_project_fusion.reciprocal.sample_matrix.tsv", quote=F, sep="\t", row.names=T)
+
+
+# Make the sample correlation plot like so using PtR:
+# trinityrnaseq/Analysis/DifferentialExpression/PtR -m C21_project_fusion.reciprocal.sample_matrix.tsv -s C21_project_fusion.reciprocal.info.tsv --heatmap --sample_cor_matrix --img_width 20 --img_height 20
+
+
+```
+
+
+
+
+
+# Want COSMIC-like cluster stats and frame change stats too.
 
 
 
@@ -1016,8 +1081,6 @@ plot(pg)
 
 
 ```
-
-
 
 
 
