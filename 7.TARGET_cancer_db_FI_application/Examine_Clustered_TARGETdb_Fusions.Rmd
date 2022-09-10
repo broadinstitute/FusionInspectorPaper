@@ -11,6 +11,7 @@ library(tidyverse)
 library(ggrepel)
 library(pheatmap)
 library(cowplot)
+library(ggforce)
 
 ```
 
@@ -544,7 +545,10 @@ fusion_sum_sample_type_fractions %>% filter(fusion_name %in% all_cosmic_fusions)
 
 ```
 
+
+############################################
 # Explore new potential fusions of interest
+############################################
 
 - exclude those found in normals here
 - rank by tumor sample fractions and proportion in C21
@@ -632,8 +636,7 @@ write.table(fusion_fraction_C21 %>% filter(cosmic) %>% arrange(desc(count_in_C21
 top_new_candidates = fusion_fraction_C21 %>%  
   filter(! fusion_name %in% fusions_found_in_normals) %>%
   filter(tot_sample_count >= 3) %>%
-  filter(frac_leiden_C21 >= 0.10) %>%
-  #filter(is.na(logTN) || logTN > 0) %>%
+  #filter(frac_leiden_C21 >= 0.10) %>%
   filter(normal == 0 | is.na(normal)) %>%
   arrange(desc(tot_sample_count))
 
@@ -698,10 +701,14 @@ candidates_sample_frac_plot
 
 cosmic_entries_plot = top_new_candidates %>% select(fusion_name, sum_sum_frac, cosmic) %>% unique() %>%
   mutate(cosmic = ifelse(cosmic, TRUE, NA)) %>% 
-  ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=TRUE, fill=cosmic)) + geom_tile() +
+  ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=TRUE, fill=cosmic)) + 
+  geom_tile() +
+  theme_bw() +
             theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
             theme(axis.title.y=element_blank(), axis.text.y = element_blank(), axis.ticks.y=element_blank()) +
-            scale_fill_manual(na.value="white", values="purple")
+            scale_fill_manual(na.value="white", values="purple") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
 cosmic_entries_plot 
 
@@ -741,10 +748,14 @@ top_new_candidates
 ```{r}
 
 reciprocal_fusion_plot = top_new_candidates %>% select(fusion_name, sum_sum_frac, reciprocal_fusion) %>% unique() %>%
-  ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=TRUE, fill=reciprocal_fusion)) + geom_tile() +
+  ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=TRUE, fill=reciprocal_fusion)) + 
+  geom_tile() +
+  theme_bw() +
             theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
             theme(axis.title.y=element_blank(), axis.text.y = element_blank(), axis.ticks.y=element_blank()) +
-            scale_fill_manual(na.value="white", values="blue") 
+            scale_fill_manual(na.value="white", values="blue")  +
+   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
 reciprocal_fusion_plot
 
@@ -795,10 +806,13 @@ cosmic_like_pred_data$fusion_cluster_att = factor(cosmic_like_pred_data$fusion_c
 cosmic_like_pred_plot = left_join(cosmic_like_pred_data, sum_sum_frac) %>% 
   ggplot(aes(x=fusion_name, y=fusion_cluster_att, fill=frac_fusions)) +
         geom_tile() +
+        theme_bw() +
         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
         ylab("Cluster Type") +
         theme(axis.text.y = element_text(size=rel(0.7)))  +
-        scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white")
+        scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white") +
+         theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
 cosmic_like_pred_plot
 
@@ -831,10 +845,13 @@ candidate_fusion_coding_frac_data = candidate_fusion_coding_data %>% select(fusi
 candidate_fusion_coding_frac_plot = left_join(candidate_fusion_coding_frac_data, sum_sum_frac) %>%  
   ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=PROT_FUSION_TYPE, fill=frac_fusions)) +
         geom_tile() +
+        theme_bw() +
         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
         ylab("Cluster Type") +
         theme(axis.text.y = element_text(size=rel(0.7)))  +
-        scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white")
+        scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white")  +
+         theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
 
 candidate_fusion_coding_frac_plot
@@ -847,10 +864,15 @@ candidate_fusion_coding_frac_plot
 # chromosome structure
 
 chrom_structure_plot = left_join(top_new_candidates, sum_sum_frac) %>% select(fusion_name, structure_type, sum_sum_frac)  %>% unique() %>%
-    ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=0, fill=structure_type)) + geom_tile() +
+    ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=0, fill=structure_type)) +
+  geom_tile() +
+   theme_bw() +
        theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank(),
           axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()
-          )
+          ) +
+ 
+         theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
 chrom_structure_plot
 
@@ -910,6 +932,93 @@ top_new_candidates_top_sample_frac
 write.table(top_new_candidates_top_sample_frac, file="TARGET.top_new_candidates.tsv", quote=F, sep="\t", row.names = F)
 
 ```
+
+
+
+```{r}
+
+
+blood_each_sample_type_heatmap = top_new_candidates %>% 
+
+ ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=sample_type)) +
+        geom_tile(aes(fill=sum_frac)) +
+        facet_col(vars(project), , scales = "free_y", space = "free") +
+
+         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
+        ylab("sample_type") +
+        xlab("fusion") +
+        theme_bw() +
+        theme(axis.text.y = element_text(size=rel(1)))  +
+        scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white") +
+        scale_x_discrete(expand = c(0, 0)) +    
+        scale_y_discrete(expand = c(0, 0)) +  
+        theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+        theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+plot(blood_each_sample_type_heatmap)
+
+```
+
+```{r}
+ggsave(blood_each_sample_type_heatmap, file="blood_each_sample_type_heatmap.pdf", width=15, height=8)
+
+```
+
+
+```{r}
+blood_top_sample_type_heatmap = top_new_candidates %>% 
+  group_by(fusion_name, project) %>% arrange(desc(sum_frac)) %>% filter(row_number() == 1) %>% ungroup() %>%
+
+ ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=reorder(project, desc(project)))) +
+        geom_tile(aes(fill=sum_frac)) +
+
+#         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
+#+
+        ylab("sample_type") +
+        xlab("fusion") +
+        theme_bw() +
+#        theme(axis.text.y = element_text(size=rel(1)))  +
+        scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white") +
+       theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+       theme(panel.border = element_blank(), 
+             panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), 
+             axis.line = element_line(colour = "black"))
+
+
+plot(blood_top_sample_type_heatmap )
+```
+
+
+
+
+```{r}
+
+
+pg = plot_grid(cosmic_like_pred_plot,
+               candidate_fusion_coding_frac_plot,
+               chrom_structure_plot,
+               cosmic_entries_plot,
+               reciprocal_fusion_plot,
+               blood_top_sample_type_heatmap ,
+                 ncol=1,
+                 align='v',
+                 axis='lr',
+                 rel_heights = c(0.2, 0.2, 0.15, 0.15, 0.15,0.70)
+                 )
+
+
+plot(pg)
+
+
+
+
+
+```
+
+
+
 
 
 
