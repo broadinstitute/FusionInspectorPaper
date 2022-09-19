@@ -94,7 +94,11 @@ fusion_annotations = fusion_annotations %>% select(-annot_adj)
 
 ```
 
+```{r}
 
+data = left_join(data, fusion_annotations, by=c('fusion_name', 'annots'))
+
+```
 
 
 ```{r}

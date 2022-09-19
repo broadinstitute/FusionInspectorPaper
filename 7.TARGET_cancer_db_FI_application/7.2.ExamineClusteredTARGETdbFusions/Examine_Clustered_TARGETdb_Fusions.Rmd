@@ -18,116 +18,14 @@ library(ggforce)
 
 ```{r}
 
-data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
-
-
-umap_data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.umap_coords.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
-
-# add TARGET db sample info
-
-TARGETdb_sample_info = read.table("../data/TARGETdb.sample_info.tsv", sep="\t", header=T, stringsAsFactors = F )
-
-
-TARGETdb_sample_info$project = str_replace(TARGETdb_sample_info$project, "TARGET-", "")
-TARGETdb_sample_info$project = str_replace(TARGETdb_sample_info$project, "ALL-P[123]", "ALL")
-
-#TARGETdb_sample_info  = TARGETdb_sample_info  %>% mutate(sample_type = paste0(project, "^", sample_type, "^", Cancer.Type) )
-
-#TARGETdb_sample_info  = TARGETdb_sample_info  %>% mutate(sample_type = paste0(project, "^", sample_type) )
-
-TARGETdb_sample_info  = TARGETdb_sample_info  %>% mutate(sample_type = paste0(project) )
-
-data = left_join(data, TARGETdb_sample_info, by='sample')
-
-data = data %>% mutate(tumor_or_normal = ifelse(grepl("Normal", sample_type), "normal", "tumor"))
-```
-
-
-
-```{r}
-
-# so later we can examine reciprocal fusions
-
-data = data %>% rowwise %>% mutate(partnerA = sort(str_split(fusion_name, "::")[[1]])[1])
-
-data = data %>% rowwise() %>% mutate(partnerB = sort(str_split(fusion_name, "::")[[1]])[2])
-
-data = data %>% rowwise() %>% mutate(sorted_fusion_name = paste0(partnerA, "::", partnerB) ) 
+data = read.table(gzfile("../../data/FusionInspector.v2.4.0.TARGET.decorated.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
 ```
 
 
 
 ```{r}
-# add the generic fusion annotations 
-
-fusion_annotations = data %>% select(fusion_name, annots) %>% unique()
-
-```
-
-
-Below, we simplify annotations given by FusionAnnotator to a small number of categories that reflect the chromosomal positions of the fusion partners and what we might infer as structural rearrangements that would ultimately yield cis-spliced fusion transcripts.
-
-The final 'structure_type' categories include:
-
-- INTRACHROMOSOMAL
-- INTERCHROMOSOMAL
-- LOCAL_REARRANGEMENT (neighboring genes that wouldn't allow for simple readthrough explanations given the ref genome)
-- READTHRU (short for readthrough cis-splicing of transcripts from neighboring genes)
-
-```{r}
-fusion_annotations = fusion_annotations  %>% mutate(annot_adj = annots)
-
-fusion_annotations$annot_adj = str_replace(fusion_annotations$annot_adj, 
-                                                      "NEIGHBORS_OVERLAP", "LOCAL_REARRANGEMENT")
-fusion_annotations$annot_adj = str_replace(fusion_annotations$annot_adj, "LOCAL_INVERSION", "LOCAL_REARRANGEMENT") 
-
-
-fusion_annotations$structure_type = "OTHER"
-
-fusion_annotations = fusion_annotations%>% mutate(structure_type = ifelse(grepl("INTRACHROMOSOMAL", annot_adj),
-                                                                               "IntraCHR", structure_type))
-
-fusion_annotations = fusion_annotations %>% mutate(structure_type = ifelse(grepl("INTERCHROMOSOMAL", annot_adj), 
-                                                                               "INTERCHR", structure_type))
-
-
-fusion_annotations = fusion_annotations %>% mutate(structure_type = ifelse(grepl("LOCAL_REARRANGEMENT", annot_adj),
-                                                                               "LOCAL_REARRANGEMENT", structure_type))
-
-fusion_annotations = fusion_annotations %>% mutate(structure_type = ifelse(grepl("NEIGHBORS", annot_adj), 
-                                                                               "READTHRU", structure_type))
-
-
-message("Counts of structure types according to unique fusions among cosmic-like clusters")
-table(fusion_annotations %>% select(fusion_name, structure_type) %>% unique() %>% pull(structure_type))
-
-fusion_annotations = fusion_annotations %>% select(-annot_adj)
-
-
-```
-
-
-
-
-```{r}
-
-all_cosmic_fusions = read.table("../data/cosmic.list", header=F, stringsAsFactors = F)[,1]
-
-```
-
-
-```{r}
-
-data = left_join(data, umap_data %>% filter(umap_frac_data == 0.5), by=c('sample', 'fusion_name', 'LeftBreakpoint', 'RightBreakpoint'))
-
-
-```
-
-
-
-```{r}
-# merge the tumor or normal samples per patient, selct the highest expressed fusion variant as representative
+# merge the tumor or normal samples per patient, select the highest expressed fusion variant as representative
 
 #samples_select = data %>% group_by(participant, tumor_or_normal) %>% filter(row_number() == 1) %>% pull(sample)
 #data = data %>% filter(sample %in% samples_select)
@@ -138,8 +36,6 @@ data = data %>% group_by(participant, fusion_name, LeftBreakpoint, RightBreakpoi
   arrange(desc(FFPM)) %>%
   filter(row_number() == 1) %>%
   ungroup()
-
-data = data %>% mutate(sample = paste0(participant, "^", tumor_or_normal))
 
 
 # can restrict to only n primary fusion occurrences to examine how it impacts our findings.
@@ -511,11 +407,16 @@ data %>% filter(is_primary & cosmic) %>% group_by(fusion_name, leiden) %>% tally
 
 ```{r}
 
-fusion_sample_type_counts = data %>% filter(is_primary) %>% group_by(fusion_name, leiden, project, sample_type) %>% tally(name='fusion_sample_type_counts')
+all_cosmic_fusions = data %>% filter(cosmic) %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
 
-sample_type_counts = data %>% select(sample, sample_type) %>% unique() %>% group_by(sample_type) %>% tally(name='sample_type_counts')
+fusion_sample_type_counts = data %>% 
+  filter(is_primary) %>% 
+  group_by(fusion_name, project, tumor_or_normal) %>% 
+  tally(name='fusion_sample_type_counts')
 
-fusion_sample_type_counts = left_join(fusion_sample_type_counts, sample_type_counts, by='sample_type')
+sample_type_counts = data %>% select(sample, project, tumor_or_normal) %>% unique() %>% group_by(project, tumor_or_normal) %>% tally(name='sample_type_counts')
+
+fusion_sample_type_counts = left_join(fusion_sample_type_counts, sample_type_counts, by=c('project', 'tumor_or_normal'))
 
 
 fusion_sample_type_counts = fusion_sample_type_counts %>% mutate(sample_type_frac = fusion_sample_type_counts / sample_type_counts)
@@ -531,34 +432,23 @@ fusion_sample_type_counts = fusion_sample_type_counts %>% mutate(cosmic = (fusio
 
 # examine cosmic fusions according to sample type representation
 
-fusion_sample_type_counts %>% filter(cosmic) %>% ggplot(aes(x=fusion_name, y=sample_type_frac, fill=sample_type)) + geom_col() +
+# nothing in normal
+fusion_sample_type_counts %>% filter(cosmic & tumor_or_normal == "normal") %>% ggplot(aes(x=fusion_name, y=sample_type_frac, fill=project)) + geom_col() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+# plot tumor
+fusion_sample_type_counts %>% filter(cosmic & tumor_or_normal == "tumor") %>% ggplot(aes(x=fusion_name, y=sample_type_frac, fill=project)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 
 ```
 
-```{r}
-# list the most prevalent cosmic fusions by sample type
-fusion_sum_sample_type_fractions = fusion_sample_type_counts %>% 
-  select(fusion_name, project, sample_type_frac, sample_type) %>% 
-  group_by(fusion_name, project, sample_type) %>% 
-  summarize(sum_frac = sum(sample_type_frac)) %>% arrange(desc(sum_frac))
-```
-
-```{r}
-fusion_sum_sample_type_fractions %>% filter(fusion_name %in% all_cosmic_fusions) 
-
-```
 
 
 
 
-
-
-
-
-
-
+#####################################################################################################################################
 
 
 ############################################
@@ -579,21 +469,27 @@ length(fusions_found_in_normals)
 
 ```{r}
 
+# examine fraction of fusions found in C21
+
 fusion_fraction_C21 = data %>% filter(is_primary) %>%  
-  group_by(fusion_name, sorted_fusion_name, leiden) %>% 
+  group_by(fusion_name, sorted_fusion_name, annots, leiden) %>% 
   tally(name='count_in_C21') %>% 
   mutate(frac_leiden_C21=prop.table(count_in_C21)) %>% 
-  filter(leiden==COSMIC_cluster)
+  filter(leiden==COSMIC_cluster) %>%
+  ungroup()
 
 fusion_fraction_C21
 ```
+
+
+
 ```{r}
 
-# examine fraction of COSMIC fusion instances found in C21
+# examine fraction of *COSMIC* fusion instances found in C21
 
 fusion_fraction_C21  = fusion_fraction_C21 %>% mutate(cosmic = (fusion_name %in% all_cosmic_fusions) )
 
-fusion_fraction_C21 %>% filter(cosmic) %>% arrange(frac_leiden_C21)
+fusion_fraction_C21 %>% filter(cosmic) %>% arrange(frac_leiden_C21) %>% select(-annots)
 
 # min of 10% here
 
@@ -602,12 +498,12 @@ fusion_fraction_C21 %>% filter(cosmic) %>% arrange(frac_leiden_C21)
 ```{r}
 
 # get total fusion abundance across TARGET samples
-fusion_all_sample_counts = data %>% filter(is_primary) %>% group_by(fusion_name) %>% tally(name='tot_sample_count')
+fusion_all_sample_counts = data %>% filter(is_primary) %>% group_by(fusion_name) %>% tally(name='tot_sample_count_w_fusion')
 
 fusion_fraction_C21 = left_join(fusion_fraction_C21, fusion_all_sample_counts, by='fusion_name')
 
 
-fusion_fraction_C21 
+fusion_fraction_C21 %>% select(-c(sorted_fusion_name, annots))
 ```
 
 
@@ -617,19 +513,19 @@ fusion_fraction_C21
 ```{r}
 
 # combine with earlier tcga/gtex occurrence stats
-tcga_gtex_fusion_stats = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+tcga_gtex_fusion_stats = read.table(gzfile("../../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
 
 fusion_fraction_C21  = left_join(fusion_fraction_C21, tcga_gtex_fusion_stats, by='fusion_name')
-
-fusion_fraction_C21
+ 
+fusion_fraction_C21 %>%  select(-c(sorted_fusion_name, annots))
 ```
 
 ```{r}
 
 # examine the cosmic-here set wrt our earlier tcga/gtex findings
 
-fusion_fraction_C21 %>% filter(cosmic) %>% arrange(desc(count_in_C21))
+fusion_fraction_C21 %>% filter(cosmic) %>% arrange(desc(count_in_C21)) %>%  select(-c(sorted_fusion_name, annots))
 
 
 ```
@@ -650,16 +546,12 @@ write.table(fusion_fraction_C21 %>% filter(cosmic) %>% arrange(desc(count_in_C21
 
 top_new_candidates = fusion_fraction_C21 %>%  
   filter(! fusion_name %in% fusions_found_in_normals) %>%
-  filter(tot_sample_count >= 3) %>%
-  #filter(frac_leiden_C21 >= 0.10) %>%
+  filter(tot_sample_count_w_fusion >= 3) %>%
   filter(normal == 0 | is.na(normal)) %>%
-  arrange(desc(tot_sample_count))
+  arrange(desc(tot_sample_count_w_fusion))
 
 
-#top_new_candidates = top_new_candidates %>% filter(! grepl("NEIGHBORS", annots))
-
-
-top_new_candidates
+top_new_candidates  %>% select(-c(sorted_fusion_name, annots))
 ```
 
 
@@ -668,32 +560,24 @@ top_new_candidates
 
 # incorporate the sample type fractions
 
-top_new_candidates = left_join(top_new_candidates, fusion_sum_sample_type_fractions,  by='fusion_name', )
+top_new_candidates = left_join(top_new_candidates, fusion_sample_type_counts,  by=c('fusion_name', 'cosmic' ) )
 
-top_new_candidates 
+top_new_candidates  %>%  select(-c(sorted_fusion_name, annots))
 ```
 
 
 
-```{r}
-
-# include annotations
-top_new_candidates = left_join(top_new_candidates, fusion_annotations, by='fusion_name')
-
-
-
-top_new_candidates 
-
-
-```
-
-
 
 ```{r}
-sum_sum_frac = top_new_candidates %>% select(fusion_name, tot_sample_count, cosmic, sum_frac, project, sample_type) %>% unique() %>%
-  group_by(fusion_name) %>% mutate(sum_sum_frac = sum(sum_frac)) %>% select(fusion_name, sum_sum_frac) %>% unique()
+sum_frac = top_new_candidates %>% 
+  select(fusion_name, tot_sample_count_w_fusion, cosmic, sample_type_frac, project) %>% 
+  unique() %>%
+  group_by(fusion_name) %>% 
+  mutate(sum_frac = sum(sample_type_frac)) %>% 
+  select(fusion_name, sum_frac) %>% 
+  unique()
 
-top_new_candidates = left_join(top_new_candidates, sum_sum_frac, by='fusion_name')
+top_new_candidates = left_join(top_new_candidates, sum_frac, by='fusion_name')
  
 ```
 
@@ -701,8 +585,8 @@ top_new_candidates = left_join(top_new_candidates, sum_sum_frac, by='fusion_name
 ```{r}
 
 candidates_sample_frac_plot = top_new_candidates  %>% 
-  group_by(fusion_name, project) %>% arrange(desc(sum_frac)) %>% filter(row_number()==1) %>% ungroup() %>%
-  ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=sum_frac, fill=project)) + geom_col() +  
+  #group_by(fusion_name, project) %>% arrange(desc(sample_type_frac) %>% filter(row_number()==1) %>% ungroup() %>%
+  ggplot(aes(x=reorder(fusion_name, -sum_frac), y=sample_type_frac, fill=project)) + geom_col() +  
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 candidates_sample_frac_plot 
@@ -714,9 +598,9 @@ candidates_sample_frac_plot
 
 # indicate if in cosmic or not
 
-cosmic_entries_plot = top_new_candidates %>% select(fusion_name, sum_sum_frac, cosmic) %>% unique() %>%
+cosmic_entries_plot = top_new_candidates %>% select(fusion_name, sum_frac, cosmic) %>% unique() %>%
   mutate(cosmic = ifelse(cosmic, TRUE, NA)) %>% 
-  ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=TRUE, fill=cosmic)) + 
+  ggplot(aes(x=reorder(fusion_name, -sum_frac), y=TRUE, fill=cosmic)) + 
   geom_tile() +
   theme_bw() +
             theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
@@ -776,14 +660,14 @@ top_new_candidates = left_join(top_new_candidates,
                                  unique() %>% mutate(reciprocal_fusion = TRUE),
                                by='fusion_name')
 
-top_new_candidates
+top_new_candidates %>% filter(reciprocal_fusion) %>% arrange(sorted_fusion_name, fusion_name)
 
 ```
 
 ```{r}
 
-reciprocal_fusion_plot = top_new_candidates %>% select(fusion_name, sum_sum_frac, reciprocal_fusion) %>% unique() %>%
-  ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=TRUE, fill=reciprocal_fusion)) + 
+reciprocal_fusion_plot = top_new_candidates %>% select(fusion_name, sum_frac, reciprocal_fusion) %>% unique() %>%
+  ggplot(aes(x=reorder(fusion_name, -sum_frac), y=TRUE, fill=reciprocal_fusion)) + 
   geom_tile() +
   theme_bw() +
             theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
@@ -843,9 +727,6 @@ write.table(t(fusion_sample_matrix), file="C21_project_fusion.reciprocal.sample_
 
 top_new_candidate_fusions = top_new_candidates %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
 
-```
-
-```{r}
 
 cosmic_like_pred_data = data %>% filter(fusion_name %in% top_new_candidate_fusions) %>% filter(is_primary) %>% 
   mutate(fusion_cluster_att = ifelse(is.na(fusion_cluster_att), "Other", fusion_cluster_att)) %>% 
@@ -859,7 +740,9 @@ cosmic_like_pred_data
 
 
 cosmic_like_pred_data = bind_rows(cosmic_like_pred_data %>% select(fusion_name, fusion_cluster_att, frac_fusions),
-          top_new_candidates %>% select(fusion_name, frac_fusions =frac_leiden_C21) %>% unique() %>% mutate(fusion_cluster_att = "frac_in_C21") )
+          top_new_candidates %>% select(fusion_name, frac_fusions = frac_leiden_C21) %>% 
+            unique() %>% 
+            mutate(fusion_cluster_att = "frac_in_C21") )
 
 cosmic_like_pred_data 
 
@@ -873,7 +756,7 @@ cosmic_like_pred_data
 cosmic_like_pred_data$fusion_cluster_att = factor(cosmic_like_pred_data$fusion_cluster_att, levels=rev(c('Other', 'COSMIC-like', 'expr_microH_RT_artifact?', 'frac_in_C21')))
 
 
-cosmic_like_pred_plot = left_join(cosmic_like_pred_data, sum_sum_frac) %>% 
+cosmic_like_pred_plot = left_join(cosmic_like_pred_data, sum_frac) %>% 
   ggplot(aes(x=fusion_name, y=fusion_cluster_att, fill=frac_fusions)) +
         geom_tile() +
         theme_bw() +
@@ -891,7 +774,7 @@ cosmic_like_pred_plot
 
 ```{r}
 
-fusion_coding_effects = read.table(gzfile("../data/fusions.coding_effects.abridged.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+fusion_coding_effects = read.table(gzfile("../../data/fusions.coding_effects.abridged.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
 
 ```
@@ -910,10 +793,12 @@ candidate_fusion_coding_data
 
 candidate_fusion_coding_frac_data = candidate_fusion_coding_data %>% select(fusion_name, PROT_FUSION_TYPE, sample) %>% 
   mutate(PROT_FUSION_TYPE = ifelse(PROT_FUSION_TYPE==".", "Other", PROT_FUSION_TYPE)) %>% 
-  group_by(fusion_name, PROT_FUSION_TYPE) %>% tally() %>% mutate(frac_fusions=prop.table(n)) 
+  group_by(fusion_name, PROT_FUSION_TYPE) %>% 
+  tally() %>% 
+  mutate(frac_fusions=prop.table(n)) 
 
-candidate_fusion_coding_frac_plot = left_join(candidate_fusion_coding_frac_data, sum_sum_frac) %>%  
-  ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=PROT_FUSION_TYPE, fill=frac_fusions)) +
+candidate_fusion_coding_frac_plot = left_join(candidate_fusion_coding_frac_data, sum_frac) %>%  
+  ggplot(aes(x=reorder(fusion_name, -sum_frac), y=PROT_FUSION_TYPE, fill=frac_fusions)) +
         geom_tile() +
         theme_bw() +
         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
@@ -933,8 +818,15 @@ candidate_fusion_coding_frac_plot
 ```{r}
 # chromosome structure
 
-chrom_structure_plot = left_join(top_new_candidates, sum_sum_frac) %>% select(fusion_name, structure_type, sum_sum_frac)  %>% unique() %>%
-    ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=0, fill=structure_type)) +
+
+top_new_candidates = left_join(top_new_candidates, 
+                                 data %>% select(fusion_name, structure_type) %>% unique(),
+                                 by='fusion_name')
+
+chrom_structure_plot =  top_new_candidates %>% 
+  select(fusion_name, structure_type, sum_frac)  %>% 
+  unique() %>%
+    ggplot(aes(x=reorder(fusion_name, -sum_frac), y=0, fill=structure_type)) +
   geom_tile() +
    theme_bw() +
        theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank(),
@@ -988,7 +880,7 @@ top_new_candidates_top_sample_frac = top_new_candidates %>% group_by(fusion_name
   arrange(desc(sum_frac)) %>%
   filter(row_number()==1) %>%
   ungroup() %>%
-  select(fusion_name, tot_sample_count, sum_frac, frac_leiden_C21, cosmic, normal, tumor, logTN, project, sample_type, annots, structure_type, sorted_fusion_name) %>%
+  select(fusion_name, tot_sample_count_w_fusion, sum_frac, frac_leiden_C21, cosmic, normal, tumor, logTN, project, annots, structure_type, sorted_fusion_name) %>%
   arrange(desc(sum_frac))
 
 
@@ -1010,8 +902,8 @@ write.table(top_new_candidates_top_sample_frac, file="TARGET.top_new_candidates.
 
 blood_each_sample_type_heatmap = top_new_candidates %>% 
 
- ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=sample_type)) +
-        geom_tile(aes(fill=sum_frac)) +
+ ggplot(aes(x=reorder(fusion_name, -sum_frac), y=project)) +
+        geom_tile(aes(fill=sample_type_frac)) +
         facet_col(vars(project), , scales = "free_y", space = "free") +
 
          theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
@@ -1037,11 +929,10 @@ ggsave(blood_each_sample_type_heatmap, file="blood_each_sample_type_heatmap.pdf"
 
 
 ```{r}
-blood_top_sample_type_heatmap = top_new_candidates %>% 
-  group_by(fusion_name, project) %>% arrange(desc(sum_frac)) %>% filter(row_number() == 1) %>% ungroup() %>%
+blood_top_sample_type_heatmap = top_new_candidates %>%
 
- ggplot(aes(x=reorder(fusion_name, -sum_sum_frac), y=reorder(project, desc(project)))) +
-        geom_tile(aes(fill=sum_frac)) +
+ ggplot(aes(x=reorder(fusion_name, -sum_frac), y=reorder(project, desc(project)))) +
+        geom_tile(aes(fill=sample_type_frac)) +
 
 #         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank())
 #+
