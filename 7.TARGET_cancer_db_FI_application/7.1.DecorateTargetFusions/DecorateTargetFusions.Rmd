@@ -1,0 +1,125 @@
+---
+title: "RecurrentTargetFusions"
+author: "bhaas"
+date: '2022-09-17'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r}
+
+data = read.table(gzfile("../../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+umap_data = read.table(gzfile("../../data/FusionInspector.v2.4.0.TARGET.umap_coords.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+# add TARGET db sample info
+
+TARGETdb_sample_info = read.table("../../data/TARGETdb.sample_info.tsv", sep="\t", header=T, stringsAsFactors = F )
+
+
+TARGETdb_sample_info$project = str_replace(TARGETdb_sample_info$project, "TARGET-", "")
+TARGETdb_sample_info$project = str_replace(TARGETdb_sample_info$project, "ALL-P[123]", "ALL")
+
+data = left_join(data, TARGETdb_sample_info, by='sample')
+
+data = data %>% mutate(tumor_or_normal = ifelse(grepl("Normal", sample_type), "normal", "tumor"))
+```
+
+
+```{r}
+
+# so later we can examine reciprocal fusions
+
+data = data %>% rowwise %>% mutate(partnerA = sort(str_split(fusion_name, "::")[[1]])[1])
+
+data = data %>% rowwise() %>% mutate(partnerB = sort(str_split(fusion_name, "::")[[1]])[2])
+
+data = data %>% rowwise() %>% mutate(sorted_fusion_name = paste0(partnerA, "::", partnerB) ) 
+
+```
+
+
+
+```{r}
+# add the generic fusion annotations 
+
+fusion_annotations = data %>% select(fusion_name, annots) %>% unique()
+
+```
+
+
+Below, we simplify annotations given by FusionAnnotator to a small number of categories that reflect the chromosomal positions of the fusion partners and what we might infer as structural rearrangements that would ultimately yield cis-spliced fusion transcripts.
+
+The final 'structure_type' categories include:
+
+- INTRACHROMOSOMAL
+- INTERCHROMOSOMAL
+- LOCAL_REARRANGEMENT (neighboring genes that wouldn't allow for simple readthrough explanations given the ref genome)
+- READTHRU (short for readthrough cis-splicing of transcripts from neighboring genes)
+
+```{r}
+fusion_annotations = fusion_annotations  %>% mutate(annot_adj = annots)
+
+fusion_annotations$annot_adj = str_replace(fusion_annotations$annot_adj, 
+                                                      "NEIGHBORS_OVERLAP", "LOCAL_REARRANGEMENT")
+fusion_annotations$annot_adj = str_replace(fusion_annotations$annot_adj, "LOCAL_INVERSION", "LOCAL_REARRANGEMENT") 
+
+
+fusion_annotations$structure_type = "OTHER"
+
+fusion_annotations = fusion_annotations%>% mutate(structure_type = ifelse(grepl("INTRACHROMOSOMAL", annot_adj),
+                                                                               "IntraCHR", structure_type))
+
+fusion_annotations = fusion_annotations %>% mutate(structure_type = ifelse(grepl("INTERCHROMOSOMAL", annot_adj), 
+                                                                               "INTERCHR", structure_type))
+
+
+fusion_annotations = fusion_annotations %>% mutate(structure_type = ifelse(grepl("LOCAL_REARRANGEMENT", annot_adj),
+                                                                               "LOCAL_REARRANGEMENT", structure_type))
+
+fusion_annotations = fusion_annotations %>% mutate(structure_type = ifelse(grepl("NEIGHBORS", annot_adj), 
+                                                                               "READTHRU", structure_type))
+
+
+message("Counts of structure types according to unique fusions among cosmic-like clusters")
+table(fusion_annotations %>% select(fusion_name, structure_type) %>% unique() %>% pull(structure_type))
+
+fusion_annotations = fusion_annotations %>% select(-annot_adj)
+
+
+```
+
+
+
+
+```{r}
+
+# incorporate the umap coordinates
+
+data = left_join(data, umap_data %>% filter(umap_frac_data == 0.5), by=c('sample', 'fusion_name', 'LeftBreakpoint', 'RightBreakpoint'))
+
+
+```
+
+
+```{r}
+
+write.table(data, file="FusionInspector.v2.4.0.TARGET.decorated.tsv", quote=F, row.names=F, sep="\t")
+
+
+```
+
+
+
+
+
+
+
+
+
+

@@ -21,8 +21,6 @@ library(ggforce)
 data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
 
-
-
 umap_data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.umap_coords.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
 # add TARGET db sample info
@@ -30,7 +28,14 @@ umap_data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.umap_coords
 TARGETdb_sample_info = read.table("../data/TARGETdb.sample_info.tsv", sep="\t", header=T, stringsAsFactors = F )
 
 
-TARGETdb_sample_info  = TARGETdb_sample_info  %>% mutate(sample_type = paste0(project, "^", sample_type) )
+TARGETdb_sample_info$project = str_replace(TARGETdb_sample_info$project, "TARGET-", "")
+TARGETdb_sample_info$project = str_replace(TARGETdb_sample_info$project, "ALL-P[123]", "ALL")
+
+#TARGETdb_sample_info  = TARGETdb_sample_info  %>% mutate(sample_type = paste0(project, "^", sample_type, "^", Cancer.Type) )
+
+#TARGETdb_sample_info  = TARGETdb_sample_info  %>% mutate(sample_type = paste0(project, "^", sample_type) )
+
+TARGETdb_sample_info  = TARGETdb_sample_info  %>% mutate(sample_type = paste0(project) )
 
 data = left_join(data, TARGETdb_sample_info, by='sample')
 
@@ -492,7 +497,7 @@ data %>% filter(cosmic & is_primary) %>% group_by(fusion_name, sample_type) %>% 
 
 
 ```{r}
-# examine cosmic fusions according to teh clusters they fall in
+# examine cosmic fusions according to the clusters they fall in
 
 data %>% filter(is_primary & cosmic) %>% group_by(fusion_name, leiden) %>% tally() %>%
   ggplot(aes(x=fusion_name, y=n, fill=factor(leiden))) + geom_col() +
@@ -1070,14 +1075,23 @@ pg = plot_grid(cosmic_like_pred_plot,
                  ncol=1,
                  align='v',
                  axis='lr',
-                 rel_heights = c(0.2, 0.2, 0.15, 0.15, 0.15,0.70)
+                 rel_heights = c(0.2, 0.2, 0.15, 0.1, 0.1, 0.70)
                  )
 
 
 plot(pg)
 
+ggsave(pg, file="TARGET_fusions_of_interest.pdf", width=18, height=12)
 
 
+
+
+```
+
+
+```{r}
+
+fusion_sample_type_counts %>% filter(fusion_name == "TCF3::PBX1")
 
 
 ```
