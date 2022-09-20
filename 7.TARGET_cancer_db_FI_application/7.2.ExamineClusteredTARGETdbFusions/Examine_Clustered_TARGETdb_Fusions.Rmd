@@ -571,7 +571,7 @@ fusion_fraction_artifact_clusters
 top_new_candidates = fusion_fraction_C21 %>%  
   filter(! fusion_name %in% fusions_found_in_normals) %>%
   filter(tot_sample_count_w_fusion >= 3) %>%
-  filter(normal == 0 | is.na(normal)) %>%
+  filter(normal == 0 | is.na(normal) | cosmic) %>%
   arrange(desc(tot_sample_count_w_fusion))
 
 
@@ -960,7 +960,7 @@ top_new_candidates_top_sample_frac
 
 
 ```{r}
-write.table(top_new_candidates_top_sample_frac, file="TARGET.top_new_candidates.tsv", quote=F, sep="\t", row.names = F)
+write.table(top_new_candidates_top_sample_frac, file="TARGET.cosmic-like_candidates.tsv", quote=F, sep="\t", row.names = F)
 
 ```
 
@@ -1042,7 +1042,7 @@ pg = plot_grid(cosmic_like_pred_plot,
 
 plot(pg)
 
-ggsave(pg, file="TARGET_fusions_of_interest.pdf", width=18, height=12)
+ggsave(pg, file="TARGET.cosmic-like_candidates.pdf", width=18, height=12)
 
 
 
