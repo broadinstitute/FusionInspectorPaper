@@ -276,7 +276,8 @@ primary_data %>% filter(grepl("DUX4", fusion_name))
 
 # IGH fusions
 
-primary_data %>% filter(grepl("IGH@-ext", fusion_name)) %>% group_by(fusion_name, tumor_or_normal) %>% tally(name='count') %>% spread(key=tumor_or_normal, value=count) %>% arrange(desc(tumor))
+primary_data %>% filter(grepl("IGH@-ext", fusion_name)) %>% group_by(fusion_name, tumor_or_normal) %>% 
+  tally(name='count') %>% spread(key=tumor_or_normal, value=count) %>% arrange(desc(tumor))
 
 
 ```
@@ -292,7 +293,12 @@ primary_data %>% filter(grepl("CRLF2", fusion_name)) %>% group_by(fusion_name, t
 ```
 
 
+```{r}
 
+
+primary_data %>% filter(fusion_name %in% c('P2RY8::CRLF2', 'IGH-@-ext::CRLF2') ) %>% arrange(desc(FFPM.starF))
+
+```
 
 
 
