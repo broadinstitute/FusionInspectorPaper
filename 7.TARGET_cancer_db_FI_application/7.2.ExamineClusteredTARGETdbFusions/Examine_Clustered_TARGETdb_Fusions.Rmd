@@ -297,6 +297,8 @@ pg = plot_grid(p[[4]], cosmic_sum_counts_per_cluster_plot_NoLegend, sum_fusion_c
 
 plot(pg)
 
+ARTIFACT_CLUSTERS = c(71,79,78,73,77)
+
 
 
 ```
@@ -495,6 +497,8 @@ fusion_fraction_C21 %>% filter(cosmic) %>% arrange(frac_leiden_C21) %>% select(-
 
 ```
 
+
+
 ```{r}
 
 # get total fusion abundance across TARGET samples
@@ -536,6 +540,26 @@ fusion_fraction_C21 %>% filter(cosmic) %>% arrange(desc(count_in_C21)) %>%  sele
 write.table(fusion_fraction_C21 %>% filter(cosmic) %>% arrange(desc(count_in_C21)), file="C21_cosmic_entries.tsv", quote=F, sep="\t", row.names = F)
 
 ```
+
+
+
+```{r}
+
+fusion_fraction_artifact_clusters = data %>% filter(is_primary) %>%  
+  mutate(in_artifact_cluster = (leiden %in% ARTIFACT_CLUSTERS) ) %>%
+
+  group_by(fusion_name, in_artifact_cluster ) %>% 
+  tally(name='count_in_artcluster') %>% 
+  mutate(frac_artcluster=prop.table(count_in_artcluster)) %>% 
+  ungroup() %>% 
+  filter(in_artifact_cluster)
+
+fusion_fraction_artifact_clusters
+
+
+```
+
+
 
 
 # select top new candidates
@@ -617,6 +641,12 @@ cosmic_entries_plot
 
 
 
+
+
+
+
+
+
 ```{r}
 
 # examine reciprocal translocations for C21
@@ -656,7 +686,7 @@ reciprocal_fusions_data %>% filter(is_primary) %>% arrange(sample, sorted_fusion
 
 
 top_new_candidates = left_join(top_new_candidates, 
-                               reciprocal_fusions_data %>% filter(leiden == COSMIC_cluster) %>% select(fusion_name) %>% 
+                               reciprocal_fusions_data %>% filter(leiden == COSMIC_cluster) %>% select(fusion_name, partnerA, partnerB) %>% 
                                  unique() %>% mutate(reciprocal_fusion = TRUE),
                                by='fusion_name')
 
@@ -679,6 +709,8 @@ reciprocal_fusion_plot = top_new_candidates %>% select(fusion_name, sum_frac, re
 reciprocal_fusion_plot
 
 ```
+
+
 
 
 ```{r}
@@ -717,6 +749,33 @@ write.table(t(fusion_sample_matrix), file="C21_project_fusion.reciprocal.sample_
 
 
 
+```{r}
+# include annotation for a gene partner among the known set of ALL driver genes
+
+ALL_driver_genes = read.table("../ALL.cancer_driver_genes.list", header=T, sep="\t")[,1]
+
+
+top_new_candidates  = top_new_candidates  %>% 
+  mutate(contains_ALL_driver_gene = (partnerA %in% ALL_driver_genes | partnerB %in% ALL_driver_genes) )
+
+# indicate if includes an ALL cancer gene or not
+
+ALL_drivers_plot = top_new_candidates  %>% select(fusion_name, sum_frac, contains_ALL_driver_gene) %>% unique() %>%
+  mutate(contains_ALL_driver_gene = ifelse(contains_ALL_driver_gene, TRUE, NA)) %>% 
+  ggplot(aes(x=reorder(fusion_name, -sum_frac), y=TRUE, fill=contains_ALL_driver_gene)) + 
+  geom_tile() +
+  theme_bw() +
+            theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
+            theme(axis.title.y=element_blank(), axis.text.y = element_blank(), axis.ticks.y=element_blank()) +
+            scale_fill_manual(na.value="white", values="cyan") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+ALL_drivers_plot 
+
+
+
+```
 
 
 # Want COSMIC-like cluster stats and frame change stats too.
@@ -748,16 +807,25 @@ cosmic_like_pred_data
 
 ```
 
+```{r}
 
+cosmic_like_pred_data = bind_rows(cosmic_like_pred_data,
+                                  fusion_fraction_artifact_clusters %>% 
+                                    filter(fusion_name %in%  top_new_candidates$fusion_name) %>%
+                                    select(fusion_name, frac_fusions = frac_artcluster) %>% mutate(fusion_cluster_att = "artifactCluster" ) ) 
+                                    
+                                
+```
 
 ```{r}
 
 
-cosmic_like_pred_data$fusion_cluster_att = factor(cosmic_like_pred_data$fusion_cluster_att, levels=rev(c('Other', 'COSMIC-like', 'expr_microH_RT_artifact?', 'frac_in_C21')))
+cosmic_like_pred_data$fusion_cluster_att = factor(cosmic_like_pred_data$fusion_cluster_att, levels=rev(c('Other', 'COSMIC-like', 'expr_microH_RT_artifact?', "artifactCluster", 'frac_in_C21')))
 
 
 cosmic_like_pred_plot = left_join(cosmic_like_pred_data, sum_frac) %>% 
-  ggplot(aes(x=fusion_name, y=fusion_cluster_att, fill=frac_fusions)) +
+  filter(fusion_cluster_att %in% c('Other', 'COSMIC-like', 'frac_in_C21')) %>% # only useful here
+  ggplot(aes(x=reorder(fusion_name, -sum_frac), y=fusion_cluster_att, fill=frac_fusions)) +
         geom_tile() +
         theme_bw() +
         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
@@ -851,12 +919,13 @@ pg = plot_grid(cosmic_like_pred_plot,
                candidate_fusion_coding_frac_plot,
                chrom_structure_plot,
                cosmic_entries_plot,
+               ALL_drivers_plot,
                reciprocal_fusion_plot,
                candidates_sample_frac_plot,
                  ncol=1,
                  align='v',
                  axis='lr',
-                 rel_heights = c(0.2, 0.2, 0.15, 0.15, 0.15,0.70)
+                 rel_heights = c(0.2, 0.2, 0.15, 0.15, 0.15, 0.15,0.70)
                  )
 
 
@@ -961,12 +1030,13 @@ pg = plot_grid(cosmic_like_pred_plot,
                candidate_fusion_coding_frac_plot,
                chrom_structure_plot,
                cosmic_entries_plot,
+               ALL_drivers_plot,
                reciprocal_fusion_plot,
                blood_top_sample_type_heatmap ,
                  ncol=1,
                  align='v',
                  axis='lr',
-                 rel_heights = c(0.2, 0.2, 0.15, 0.1, 0.1, 0.70)
+                 rel_heights = c(0.2, 0.2, 0.15, 0.1, 0.1, 0.1, 0.70)
                  )
 
 

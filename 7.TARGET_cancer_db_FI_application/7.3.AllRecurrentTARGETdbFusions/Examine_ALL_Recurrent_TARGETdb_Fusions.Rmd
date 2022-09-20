@@ -132,6 +132,20 @@ data = data %>% mutate(cosmic = fusion_name %in% all_cosmic_fusions)
 
 ```{r}
 
+# include annotation for a gene partner among the known set of ALL driver genes
+
+ALL_driver_genes = read.table("../ALL.cancer_driver_genes.list", header=T, sep="\t")[,1]
+
+
+data = data %>% mutate(contains_ALL_driver_gene = (partnerA %in% ALL_driver_genes | partnerB %in% ALL_driver_genes) )
+
+
+```
+
+
+
+```{r}
+
 # write summary combined fusion calls
 
 write.table(data, file="TARGET_STAR-Fusion-v1.10.0_FusionInspector-v2.4.0.fusions.tsv", quote=F, sep="\t", row.names=F)
@@ -378,6 +392,16 @@ top_new_candidates = left_join(top_new_candidates, sum_frac, by='fusion_name')
 ```
 
 
+```{r}
+write.table(top_new_candidates, file="TARGET.all_candidates.tsv", quote=F, sep="\t", row.names = F)
+
+
+write.table(top_new_candidates %>% select(fusion_name, project, fusion_sample_type_counts, sample_type_counts, sample_type_frac) %>% unique() %>% arrange(desc(sample_type_frac)), file="TARGET.all_candidates.summary.tsv", quote=F, sep="\t", row.names = F)
+
+```
+
+
+
 ## Reduce top candidates according to min (sample_type_frac)
 
 ```{r}
@@ -433,6 +457,32 @@ cosmic_entries_plot
 
 
 ```
+
+
+```{r}
+
+# indicate if includes an ALL cancer gene or not
+
+ALL_drivers_plot = top_new_candidates_min_sample_frac  %>% select(fusion_name, sum_frac, contains_ALL_driver_gene) %>% unique() %>%
+  mutate(contains_ALL_driver_gene = ifelse(contains_ALL_driver_gene, TRUE, NA)) %>% 
+  ggplot(aes(x=reorder(fusion_name, -sum_frac), y=TRUE, fill=contains_ALL_driver_gene)) + 
+  geom_tile() +
+  theme_bw() +
+            theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
+            theme(axis.title.y=element_blank(), axis.text.y = element_blank(), axis.ticks.y=element_blank()) +
+            scale_fill_manual(na.value="white", values="blue") +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+ALL_drivers_plot 
+
+
+
+```
+
+
+
+
 
 
 
