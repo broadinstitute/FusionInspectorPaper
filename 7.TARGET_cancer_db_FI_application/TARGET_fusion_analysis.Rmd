@@ -179,11 +179,11 @@ TARGET_cosmic_fusion_sample_counts %>% ggplot(aes(x=reorder(fusion_name, -sum_sa
 
 tcga_gtex_stats = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
-tcga_gtex_stats = tcga_gtex_stats %>% filter(fusion_name %in% cosmic_fusions) 
+tcga_gtex_stats_cosmic = tcga_gtex_stats %>% filter(fusion_name %in% cosmic_fusions) 
 
 cosmic_fusion_sample_counts = bind_rows(TARGET_cosmic_fusion_sample_counts %>% select(project, fusion_name, sample_count_w_fusion), 
                                         
-                                        tcga_gtex_stats %>% filter(tumor>0) %>% 
+                                        tcga_gtex_stats_cosmic %>% filter(tumor>0) %>% 
                                           mutate(project="TCGA") %>% 
                                           select(project, fusion_name, sample_count_w_fusion = tumor)
                                         ) 
@@ -235,7 +235,76 @@ cosmic_fusion_sample_counts %>% filter(! fusion_name %in% tcga_gtex_stats$fusion
 
 
 
+# What are the fusions found in the TARGET normal samples?
+
+```{r}
+
+normal_FI_fusions = left_join(FI_data %>% filter(tumor_or_normal == "normal"),
+                                                 tcga_gtex_stats,
+                                                 by='fusion_name'
+                                                 )
 
 
+```
+
+
+```{r}
+# count up the normal TARGET fusions
+
+# how many normal samples w fusions:
+normal_FI_fusions  %>% select(sample) %>% unique() %>% nrow()
+# 32 samples.
+
+normal_FI_fusions %>% filter(is_primary) %>% nrow()
+# 1865 normal fusion occurrences
+
+
+normal_FI_fusions %>% filter(is_primary) %>% select(fusion_name) %>% unique() %>% nrow()
+# 1036 normal fusion gene pairs
+
+```
+
+
+```{r}
+
+# examine overlap with GTEx normals
+normal_FI_fusions %>% filter(normal > 0) %>% select(fusion_name) %>% unique()
+# 428 normal fusion gene pairs overlap with GTEx (41% of unique fusion gene pairs), and so more than half (59%) of these normal fusions are unique to the small set of normals here.
+
+```
+
+```{r}
+
+normal_FI_fusions = normal_FI_fusions %>% mutate(in_GTEx = (normal > 0 | ! is.na(normal)))
+
+```
+
+```{r}
+# examine the most commonly encountered normal fusions in TARGET
+
+normal_FI_fusions %>% filter(is_primary) %>% group_by(fusion_name, in_GTEx) %>% tally() %>% arrange(desc(n))
+
+
+```
+
+
+```{r}
+
+# how many of these normal fusions are recurrent among TARGET normals, and of these, how many are in GTEx?
+normal_FI_fusions %>% filter(is_primary) %>% group_by(fusion_name, in_GTEx) %>% tally() %>% filter(n>1) %>% nrow()
+# 199
+
+# 199/1036 = 19% of the TARGET normal fusions are recurrent.
+
+# how many of these 199 are in GTEx?
+normal_FI_fusions %>% filter(is_primary & in_GTEx) %>% group_by(fusion_name, in_GTEx) %>% tally() %>% filter(n>1) %>% nrow()
+# 179
+
+# so 179/199 = 90% of the recurrent normal TARGET fusions are also found in GTEx.
+
+
+
+
+```
 
 
