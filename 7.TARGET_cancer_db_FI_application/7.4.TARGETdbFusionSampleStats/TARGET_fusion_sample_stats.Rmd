@@ -1,0 +1,136 @@
+---
+title: "TARGET Fusion Sample Stats"
+author: "bhaas"
+date: '2022-09-21'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r}
+
+data = read.table(gzfile("../../data/STAR-Fusion.v1.10.0.TARGETdb.tsv.gz"),
+                  header=T, sep="\t", stringsAsFactors = F)
+
+```
+
+```{r}
+## some initial cleanup
+data = data %>% 
+  filter(! grepl("chrM", annots)) %>%
+  filter(! grepl("HLA", fusion_name)) %>%
+  filter(! (grepl("^IG[HKVL]", LeftGene) & grepl("^IG[HKVL]", RightGene)))
+
+
+```
+
+
+```{r}
+target_sample_info = read.table("../../data/TARGETdb.sample_info.tsv", header=T, sep="\t", stringsAsFactors = F)
+
+target_sample_info = target_sample_info %>% mutate(tumor_or_normal = ifelse(grepl("Normal", sample_type), "normal", "tumor"))
+
+target_sample_info$project = str_replace(target_sample_info$project, "TARGET-", "")
+target_sample_info$project = str_replace(target_sample_info$project, "ALL-P1", "ALL")
+target_sample_info$project = str_replace(target_sample_info$project, "ALL-P2", "ALL")
+target_sample_info$project = str_replace(target_sample_info$project, "ALL-P3", "ALL")
+
+
+data = left_join(data, target_sample_info, by='sample')
+
+```
+
+
+
+```{r}
+# restrict to those samples that have tumor and normal pairs:
+participants_tumor_and_normal = target_sample_info %>% select(participant, tumor_or_normal) %>% unique() %>% group_by(participant) %>% tally() %>% filter(n==2) %>% pull(participant)
+
+participants_tumor_and_normal
+```
+
+Too few paired samples for analysis
+
+
+```{r}
+
+# restrict to highest expressed fusion variant per sample.
+data = data %>% group_by(sample, fusion_name) %>% arrange(desc(FFPM)) %>% filter(row_number() == 1) %>% ungroup()
+
+
+```
+
+
+
+
+```{r}
+
+fusion_sample_counts = data %>% 
+  filter(FFPM >= 0.1) %>% 
+  group_by(sample, project, tumor_or_normal) %>% tally()
+
+## include samples w/ no fusions detected
+
+
+fusion_sample_counts = left_join(target_sample_info %>% select(sample, project, tumor_or_normal) %>% unique(),
+                                 fusion_sample_counts)
+
+fusion_sample_counts = fusion_sample_counts %>% mutate(n=ifelse(is.na(n), 0, n))
+
+fusion_sample_counts
+```
+
+
+
+```{r}
+
+source("../../Rlib/geom_split_violin.R")
+
+
+ p =fusion_sample_counts %>%
+     ggplot(aes(x=project, y=n, fill=tumor_or_normal)) + geom_split_violin(scale='width') + 
+     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) +
+     geom_jitter(size=rel(0.05)) + 
+   ggtitle("TARGET sample fusion counts, tumor vs. normal samples") + 
+   ylab("count of fusions")
+   #+ ylim(0,50)
+   
+
+plot(p)
+
+```
+
+
+
+```{r}
+
+# determine median fusion counts per project type:
+median_fusion_counts = fusion_sample_counts %>% group_by(project, tumor_or_normal) %>% summarise(median(n))
+
+
+median_fusion_counts
+
+```
+
+```{r}
+
+# just normal median fusion counts / sample
+median_fusion_counts %>% filter(tumor_or_normal == "normal")
+
+
+```
+
+
+
+```{r}
+
+# tumor median fusion counts  / sample
+
+median_fusion_counts %>% filter(tumor_or_normal == "tumor") %>% arrange(`median(n)`)
+```
+
+
