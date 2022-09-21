@@ -10,72 +10,147 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
+
+```{r}
+
+target_sample_info = read.table("../data/TARGETdb.sample_info.tsv", sep="\t", header=T, stringsAsFactors = F)
+
+target_sample_info = target_sample_info %>% mutate(tumor_or_normal = ifelse(grepl("Normal", sample_type), "normal", "tumor"))
+
+target_sample_info$project = str_replace(target_sample_info$project, "TARGET-", "")
+target_sample_info$project = str_replace(target_sample_info$project, "ALL-P[\\d]", "ALL")
+
+target_project_sample_counts = target_sample_info %>% select(sample, project, tumor_or_normal) %>% unique() %>% 
+  group_by(project, tumor_or_normal) %>%  tally(name='total_sample_count') %>% arrange(project, desc(total_sample_count))
+
+
+target_project_sample_counts
+
+```
+
+```{r}
+
+target_sample_info %>% nrow()
+# 1366 samples
+
+target_sample_info %>% select(participant) %>% unique() %>% nrow()
+# 1230 participants
+
+```
+
+# STARF results
+
+```{r}
+
+STARF_data = read.table(gzfile("../data/STAR-Fusion.v1.10.0.TARGETdb.tsv.gz"),
+                           header=T, sep="\t", stringsAsFactors = F)
+
+
+STARF_data$fusion_name = str_replace(STARF_data$fusion_name, "--", "::")
+
+## some initial cleanup
+STARF_data = STARF_data %>% 
+  filter(! grepl("chrM", annots)) %>%
+  filter(! grepl("HLA", fusion_name)) %>%
+  filter(! (grepl("^IG[HKVL]", LeftGene) & grepl("^IG[HKVL]", RightGene)))
+
+
+# set primary isoform
+STARF_data = STARF_data %>% group_by(sample, fusion_name) %>% arrange(desc(FFPM)) %>% mutate(is_primary = (row_number()==1) ) %>% ungroup()
+
+
+# add sample info
+STARF_data = left_join(STARF_data, target_sample_info, by='sample')
+
+cosmic_fusions = read.table("../data/cosmic.list")[,1]
+STARF_data = STARF_data %>% mutate(cosmic = (fusion_name %in% cosmic_fusions))
+
+
+```
+
+
+
+
+```{r}
+
+# how many STAR-F fusions variants
+STARF_data %>% select(sample, fusion_name) %>% nrow()
+# 228612
+
+# how many STAR-F fusion occurrences
+
+STARF_data %>% filter(is_primary) %>% select(sample, fusion_name)  %>% nrow()
+# 213786
+
+```
+
+
+
+# FI results
+
 ```{r}
 
 # input data
 
-data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), sep="\t", com='', header=T, stringsAsFactors = F)
+FI_data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), sep="\t", com='', header=T, stringsAsFactors = F)
 
-sample_info = read.table("../data/TARGETdb.sample_info.tsv", sep="\t", header=T, stringsAsFactors = F)
-
-data = left_join(data, sample_info, by='sample')
-
-
-# define primary fusion
-
-data = data %>% group_by(sample, fusion_name) %>% arrange(desc(FFPM) ) %>% mutate(is_primary = ifelse(row_number() == 1, TRUE, FALSE))
-
-data = data %>% ungroup()
-
-## annotate cosmic entries
-data = data %>% mutate(is_cosmic = grepl("Cosmic", annots))
+FI_data = FI_data %>% 
+  filter(! grepl("chrM", annots)) %>%
+  filter(! grepl("HLA", fusion_name)) %>%
+  filter(! (grepl("^IG[HKVL]", LeftGene) & grepl("^IG[HKVL]", RightGene)))
 
 
-```
-
-
-
-```{r}
-
-# count fusions according to predicted cluster
-
-fusion_counts_by_cluster = data %>% filter(is_primary) %>% group_by(pred_cluster) %>% tally(name='fusion_count')
-
-
-fusion_counts_by_cluster
+FI_data = left_join(FI_data, target_sample_info, by='sample')
 
 ```
 
 
 ```{r}
 
-# count cosmic fusions per cluster 
 
-cosmic_counts_by_cluster = data %>% filter(is_primary) %>% filter(is_cosmic) %>% group_by(pred_cluster) %>% tally(name='cosmic_count')
+# how many FI fusions variants
+FI_data %>% select(sample, fusion_name) %>% nrow()
+# 217614
 
+# how many FI fusion occurrences
 
-cosmic_counts_by_cluster
+FI_data %>% filter(is_primary) %>% select(sample, fusion_name)  %>% nrow()
+# 182807
 
 ```
 
+
+182807 / 213786 = 0.86
+
+so, 86% of the STAR-F identified fusions were further 'in silico validated' by FusionInspector.
+
+
+# COSMIC fusions in TARGET w/ comparison to TCGA
+
+```{r}
+
+
+
+TARGET_cosmic_fusion_sample_counts = STARF_data %>% filter(cosmic & is_primary) %>% select(participant, project, tumor_or_normal, fusion_name) %>% unique() %>% group_by(project, tumor_or_normal, fusion_name) %>% tally(name='sample_count_w_fusion')
+
+TARGET_cosmic_fusion_sample_counts = left_join(TARGET_cosmic_fusion_sample_counts, target_project_sample_counts, by=c('project', 'tumor_or_normal'))
+
+
+TARGET_cosmic_fusion_sample_counts = TARGET_cosmic_fusion_sample_counts %>% mutate(sample_type_frac = sample_count_w_fusion / total_sample_count)
+
+
+fusion_name_sum_sample_counts = TARGET_cosmic_fusion_sample_counts %>% group_by(fusion_name) %>% summarize(sum_samples = sum(sample_count_w_fusion))
+
+TARGET_cosmic_fusion_sample_counts = left_join(TARGET_cosmic_fusion_sample_counts, fusion_name_sum_sample_counts, by='fusion_name')
+
+TARGET_cosmic_fusion_sample_counts %>% arrange(desc(sample_type_frac))
+```
 
 
 ```{r}
 
-# combine into single table and examine fraction cosmic fusions per cluster
 
-cosmic_counts_by_cluster = full_join(cosmic_counts_by_cluster, fusion_counts_by_cluster, by='pred_cluster')
-
-cosmic_counts_by_cluster  = cosmic_counts_by_cluster  %>% mutate(frac_cosmic = cosmic_count/fusion_count)
-
-cosmic_counts_by_cluster
-
-```
-
-```{r}
-
-cosmic_counts_by_cluster %>% ggplot(aes(x=pred_cluster, y=frac_cosmic)) + geom_col() +
-  ggtitle("Fraction COSMIC fusions per predicted cluster") +
+TARGET_cosmic_fusion_sample_counts %>% ggplot(aes(x=reorder(fusion_name, -sum_samples), y=sample_count_w_fusion, fill=project)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 
@@ -84,167 +159,82 @@ cosmic_counts_by_cluster %>% ggplot(aes(x=pred_cluster, y=frac_cosmic)) + geom_c
 
 ```{r}
 
-# examine types of fusions found in each predicted cluster
 
-fusion_counts_by_cluster = data %>% filter(is_primary) %>% filter(is_cosmic) %>% 
-  group_by(fusion_name, pred_cluster) %>%
-  tally(name='fusion_count') 
-
-fusion_counts_by_cluster  %>%
-  ggplot(aes(x=pred_cluster, y=fusion_count, fill=fusion_name)) + geom_col() +
-  ggtitle("COSMIC fusions in each cluster")
+TARGET_cosmic_fusion_sample_counts %>% ggplot(aes(x=reorder(fusion_name, -sum_samples), y=sample_type_frac, fill=project)) + geom_col() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+   theme(panel.border = element_blank(), 
+             panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), 
+             axis.line = element_line(colour = "black"))
 
 
 ```
 
 
 
-
-
-
-
-
 ```{r}
 
-# Explore COSMIC fu sions according to high-level categories of clusters
+# examine our earlier TCGA / COSMIC results:
 
-data %>% filter(is_primary) %>% filter(is_cosmic) %>% group_by(fusion_name, fusion_cluster_att) %>% tally(name='fusion_count') %>%
-  ggplot(aes(x=fusion_cluster_att, y=fusion_count, fill=fusion_name)) +
-  geom_col()
+tcga_gtex_stats = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.stats.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+tcga_gtex_stats = tcga_gtex_stats %>% filter(fusion_name %in% cosmic_fusions) 
+
+cosmic_fusion_sample_counts = bind_rows(TARGET_cosmic_fusion_sample_counts %>% select(project, fusion_name, sample_count_w_fusion), 
+                                        
+                                        tcga_gtex_stats %>% filter(tumor>0) %>% 
+                                          mutate(project="TCGA") %>% 
+                                          select(project, fusion_name, sample_count_w_fusion = tumor)
+                                        ) 
 
 ```
 
 
 ```{r}
 
-data %>% filter(is_primary) %>% filter(is_cosmic) %>% group_by(fusion_name, fusion_cluster_att) %>% tally(name='fusion_count') %>%
-  ggplot(aes(x=fusion_name, y=fusion_count, fill=fusion_cluster_att)) +
-  geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  ggtitle("COSMIC fusion cluster assignment classes")
+cosmic_fusion_sample_counts = cosmic_fusion_sample_counts %>% mutate(in_TCGA = (fusion_name %in% tcga_gtex_stats$fusion_name)) 
+
+```
+
+
+```{r}
+cosmic_fusion_sample_counts  %>% 
+  ggplot(aes(x=reorder(fusion_name, in_TCGA), y=project, fill=log(sample_count_w_fusion+1))) + geom_tile() + 
+  theme_bw() +
+   scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white") +
+       theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+       theme(panel.border = element_blank(), 
+             panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), 
+             axis.line = element_line(colour = "black"))
+
+                                        
+```
+                             
+```{r}
+
+# which cosmic fusions are unique to TARGET set as compared to TCGA
+
+cosmic_fusion_sample_counts %>% filter(! fusion_name %in% tcga_gtex_stats$fusion_name) %>%
+  ggplot(aes(x=fusion_name, y=project, fill=log(sample_count_w_fusion+1))) + geom_tile() + 
   
+   theme_bw() +
+   scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white") +
+       theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+       theme(panel.border = element_blank(), 
+             panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), 
+             axis.line = element_line(colour = "black")) +
+   theme(axis.text.x = element_text(angle = 90, hjust = 1))
+                                        
 
 
 ```
 
 
-```{r}
-
-cosmic_FAR_data = data %>% filter(is_cosmic & pred_cluster == 4 & is_primary) %>% 
-  rename("5p-FAR" = FAR_left, "3p-FAR" = FAR_right ) %>%
-  gather(key=FAR_type, value=FAR_val, "5p-FAR", "3p-FAR") %>%
-  mutate(FAR_type=factor(FAR_type, levels=c("5p-FAR", "3p-FAR"))) 
 
 
-cosmic_FAR_data %>%
-  ggplot(aes(x=FAR_type, y=FAR_val)) + geom_boxplot() + facet_wrap(~fusion_name, scale='free_y') +
-  ggtitle("5p- and 3p-FAR distributions for TARGET COSMIC C4-pred fusions")
-
-
-```
-
-
-```{r}
-
-
-# statistical significance of COSMIC fusion enrichment
-
-
-cosmic_counts_by_cluster = cosmic_counts_by_cluster %>% mutate(cosmic_count = ifelse(is.na(cosmic_count), 0, cosmic_count))
-
-
-tot_cosmic_fusions = sum(cosmic_counts_by_cluster$cosmic_count)
-tot_noncosmic_fusions = sum(cosmic_counts_by_cluster$fusion_count) - tot_cosmic_fusions
-
-
-run_fishers_exact_test = function(cosmic_count, fusion_count) {
-    
-    message("cosmic_count: ", cosmic_count)
-    message("fusion count: ", fusion_count)
-  
-    non_cosmic_count = fusion_count - cosmic_count
-    confusion_matrix = matrix(c(cosmic_count, non_cosmic_count,
-                                tot_cosmic_fusions - cosmic_count, tot_noncosmic_fusions - non_cosmic_count),
-                              nrow=2, byrow = T)    
-    print(confusion_matrix)
-    
-    f = fisher.test(confusion_matrix, alternative = 'greater')
-    
-    return(f$p.value)
-    
-}
-
-
-cosmic_counts_by_cluster = cosmic_counts_by_cluster  %>% rowwise() %>% mutate(
-  pval = run_fishers_exact_test(
-         cosmic_count, fusion_count)
-)  %>% mutate(negLOGp = -1 * log10(pval))
-
-
-cosmic_counts_by_cluster
-
-```
-
-
-```{r}
-
-
-cosmic_counts_by_cluster %>% ggplot(aes(x=pred_cluster, y=negLOGp)) + geom_col() +
-  ggtitle("TARGET COSMIC fusion enrichment per predicted clusters")
-
-
-```
-
-
-```{r}
-
-# compare cosmic fusions found here vs. those found in TCGA
-
-starF_TCGA_cosmic_fusions = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz"), 
-                                       sep="\t", com='', stringsAsFactors = F, header=T) %>% 
-  filter(cosmic & data_class == "TCGA" & is_primary)
-
-```
-
-
-```{r}
-
-# count cosmic fusions according to sample
-
-TCGA_cosmic_counts = starF_TCGA_cosmic_fusions %>% 
-  select(sample, fusion_name) %>% 
-  group_by(fusion_name) %>% 
-  tally(name='cosmic_count') %>% 
-  mutate(data_class = "TCGA")
-
-TCGA_cosmic_counts
-
-```
-
-```{r}
-
-TARGET_cosmic_sample_counts = data %>% filter(is_primary & is_cosmic) %>% select(sample, fusion_name) %>% group_by(fusion_name) %>% tally(name='cosmic_count') %>% mutate(data_class = 'TARGET')
-
-TARGET_cosmic_sample_counts
-
-```
-
-```{r}
-
-cosmic_sample_counts = bind_rows(TARGET_cosmic_sample_counts, TCGA_cosmic_counts)
-
-```
-
-
-
-
-```{r}
-
-
-cosmic_sample_counts %>% ggplot(aes(x=fusion_name, y=cosmic_count, fill=data_class)) + geom_col() + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))  + ggtitle("COSMIC fusion sample counts for TARGET and TCGA")
-
-
-```
 
 
 
