@@ -448,6 +448,17 @@ fusion_sample_type_counts %>% filter(cosmic & tumor_or_normal == "tumor") %>% gg
 
 
 
+```{r}
+
+# how many COSMC fusions are represented by C21?
+
+data %>% filter(leiden == COSMIC_cluster) %>% filter(cosmic) %>% select(fusion_name) %>% unique() 
+
+# 22
+
+```
+
+
 
 
 #####################################################################################################################################
@@ -1036,7 +1047,7 @@ pg = plot_grid(cosmic_like_pred_plot,
                  ncol=1,
                  align='v',
                  axis='lr',
-                 rel_heights = c(0.2, 0.2, 0.15, 0.1, 0.1, 0.1, 0.70)
+                 rel_height2s = c(0.2, 0.2, 0.15, 0.1, 0.1, 0.1, 0.70)
                  )
 
 
@@ -1057,7 +1068,20 @@ fusion_sample_type_counts %>% filter(fusion_name == "TCF3::PBX1")
 
 ```
 
+```{r}
 
+# how many of the top candidates involve an aLL candidate driver gene?
+top_new_candidates %>% filter(contains_ALL_driver_gene) %>% select(fusion_name) %>% unique()  %>% nrow()
+# 28
+
+# and how many of these have evidence of a reciprocal fusion?
+
+top_new_candidates %>% filter(contains_ALL_driver_gene & reciprocal_fusion) %>% select(fusion_name) %>% unique()  %>% nrow()
+
+# all ALL-driver-gene containing fusions have evidence of recprocal fusions
+
+# 28/108 = 26% 
+```
 
 
 

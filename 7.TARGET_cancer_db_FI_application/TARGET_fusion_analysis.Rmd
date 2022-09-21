@@ -131,7 +131,7 @@ so, 86% of the STAR-F identified fusions were further 'in silico validated' by F
 
 
 
-TARGET_cosmic_fusion_sample_counts = STARF_data %>% filter(cosmic & is_primary) %>% select(participant, project, tumor_or_normal, fusion_name) %>% unique() %>% group_by(project, tumor_or_normal, fusion_name) %>% tally(name='sample_count_w_fusion')
+TARGET_cosmic_fusion_sample_counts = STARF_data %>% filter(cosmic & is_primary) %>% select(participant, project, tumor_or_normal, fusion_name) %>% unique() %>% group_by(project, tumor_or_normal, fusion_name) %>% tally(name='sample_count_w_fusion') %>% ungroup()
 
 TARGET_cosmic_fusion_sample_counts = left_join(TARGET_cosmic_fusion_sample_counts, target_project_sample_counts, by=c('project', 'tumor_or_normal'))
 
@@ -139,7 +139,7 @@ TARGET_cosmic_fusion_sample_counts = left_join(TARGET_cosmic_fusion_sample_count
 TARGET_cosmic_fusion_sample_counts = TARGET_cosmic_fusion_sample_counts %>% mutate(sample_type_frac = sample_count_w_fusion / total_sample_count)
 
 
-fusion_name_sum_sample_counts = TARGET_cosmic_fusion_sample_counts %>% group_by(fusion_name) %>% summarize(sum_samples = sum(sample_count_w_fusion))
+fusion_name_sum_sample_counts = TARGET_cosmic_fusion_sample_counts %>% group_by(fusion_name) %>% summarize(sum_samples = sum(sample_count_w_fusion)) %>% ungroup()
 
 TARGET_cosmic_fusion_sample_counts = left_join(TARGET_cosmic_fusion_sample_counts, fusion_name_sum_sample_counts, by='fusion_name')
 
@@ -149,10 +149,8 @@ TARGET_cosmic_fusion_sample_counts %>% arrange(desc(sample_type_frac))
 
 ```{r}
 
-
-TARGET_cosmic_fusion_sample_counts %>% ggplot(aes(x=reorder(fusion_name, -sum_samples), y=sample_count_w_fusion, fill=project)) + geom_col() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
+# how many unique COSMIC fusions found in TARGET
+TARGET_cosmic_fusion_sample_counts %>% select(fusion_name) %>% unique() %>% nrow()
 
 ```
 
@@ -160,7 +158,23 @@ TARGET_cosmic_fusion_sample_counts %>% ggplot(aes(x=reorder(fusion_name, -sum_sa
 ```{r}
 
 
-TARGET_cosmic_fusion_sample_counts %>% ggplot(aes(x=reorder(fusion_name, -sum_samples), y=sample_type_frac, fill=project)) + geom_col() +
+TARGET_cosmic_sample_count_plot = TARGET_cosmic_fusion_sample_counts %>% ggplot(aes(x=reorder(fusion_name, -sum_samples), y=sample_count_w_fusion, fill=project)) + geom_col() +
+   theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+   theme(panel.border = element_blank(), 
+             panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), 
+             axis.line = element_line(colour = "black"))
+
+TARGET_cosmic_sample_count_plot
+
+```
+
+
+```{r}
+
+
+TARGET_cosmic_proj_frac_plot = TARGET_cosmic_fusion_sample_counts %>% ggplot(aes(x=reorder(fusion_name, -sum_samples), y=sample_type_frac, fill=project)) + geom_col() +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
    theme(panel.border = element_blank(), 
@@ -168,8 +182,10 @@ TARGET_cosmic_fusion_sample_counts %>% ggplot(aes(x=reorder(fusion_name, -sum_sa
                panel.grid.minor = element_blank(), 
              axis.line = element_line(colour = "black"))
 
-
+TARGET_cosmic_proj_frac_plot
 ```
+
+
 
 
 
@@ -200,6 +216,7 @@ cosmic_fusion_sample_counts = cosmic_fusion_sample_counts %>% mutate(in_TCGA = (
 
 ```{r}
 cosmic_fusion_sample_counts  %>% 
+  filter(fusion_name %in% TARGET_cosmic_fusion_sample_counts$fusion_name) %>%
   ggplot(aes(x=reorder(fusion_name, in_TCGA), y=project, fill=log(sample_count_w_fusion+1))) + geom_tile() + 
   theme_bw() +
    scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white") +
@@ -232,6 +249,56 @@ cosmic_fusion_sample_counts %>% filter(! fusion_name %in% tcga_gtex_stats$fusion
 
 ```
 
+
+```{r}
+# how many cosmic are unique to TARGET - not found in TCGA?
+
+cosmic_fusion_sample_counts %>% ungroup() %>% filter(! fusion_name %in% tcga_gtex_stats$fusion_name) %>% 
+  select(fusion_name) %>% unique() %>% nrow()
+
+```
+
+```{r}
+
+TCGA_fusions =  tcga_gtex_stats %>% filter(tumor > 0) %>% pull(fusion_name)
+
+```
+
+
+```{r}
+in_TCGA_indicator_plot = TARGET_cosmic_fusion_sample_counts  %>% mutate(in_TCGA = ifelse(fusion_name %in% TCGA_fusions, TRUE, NA ) ) %>%
+  ggplot(aes(x=reorder(fusion_name, -sum_samples), y='in_TCGA', fill=in_TCGA)) + geom_tile() + 
+  theme_bw() +
+       theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+       theme(panel.border = element_blank(), 
+             panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), 
+             axis.line = element_line(colour = "black")) +
+   scale_fill_manual(na.value="white", values="purple")
+
+ in_TCGA_indicator_plot   
+```
+
+
+
+```{r}
+
+# joint plot for supp fig.
+
+library(cowplot)
+
+plot_grid(TARGET_cosmic_sample_count_plot + theme(axis.title.x=element_blank(), axis.text.x=element_blank()),  
+          TARGET_cosmic_proj_frac_plot + theme(axis.title.x=element_blank(), axis.text.x=element_blank()),
+           in_TCGA_indicator_plot ,
+          ncol=1,
+          align='v',
+          axis='lr',
+          rel_heights = c(0.25, 0.25, 0.1)
+          )
+
+
+
+```
 
 
 
