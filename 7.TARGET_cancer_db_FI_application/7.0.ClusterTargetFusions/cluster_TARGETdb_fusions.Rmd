@@ -21,7 +21,7 @@ library(pheatmap)
 
 FRACTION_DATA_USE = 0.20 # set to 1.0 to use all data, just takes a long time to run - like a full day.
 
-fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+fusion_data = read.table(gzfile("../../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
 
 # strip out earlier computed values when using here.
 fusion_data = fusion_data[, ! grepl("^adj", colnames(fusion_data))]
@@ -40,7 +40,7 @@ fusion_data = fusion_data %>% group_by(sample, fusion_name) %>% arrange(desc(FFP
 
 # set known cosmic attribute
 
-cosmic_fusions = read.table("../data/cosmic.list", header=F, stringsAsFactors = F)[,1]
+cosmic_fusions = read.table("../../data/cosmic.list", header=F, stringsAsFactors = F)[,1]
 
 fusion_data = fusion_data %>% mutate(cosmic = (fusion_name %in% cosmic_fusions))
 

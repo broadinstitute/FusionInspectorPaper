@@ -1,0 +1,72 @@
+---
+title: "decide_which_umap"
+author: "bhaas"
+date: '2022-09-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r}
+
+load("saved_RData/saved.0.2.final.RData")
+
+
+umap_data_20pct = fusion_data %>% select(sample, fusion_name, LeftBreakpoint, RightBreakpoint, umap1, umap2) %>%
+  mutate(umap_frac_data = 0.2)
+
+
+
+umap_data_20pct %>% ggplot(aes(x=umap1, y=umap2)) + geom_point(size=0.1)
+
+```
+
+```{r}
+
+load("saved_RData/saved.0.5.final.RData")
+
+
+umap_data_50pct = fusion_data %>% select(sample, fusion_name, LeftBreakpoint, RightBreakpoint, umap1, umap2) %>%
+  mutate(umap_frac_data = 0.5)
+
+
+
+umap_data_50pct %>% ggplot(aes(x=umap1, y=umap2)) + geom_point(size=0.5)
+
+
+```
+
+
+```{r}
+
+
+load("saved_RData/saved.1.final.RData")
+
+
+umap_data_100pct = fusion_data %>% select(sample, fusion_name, LeftBreakpoint, RightBreakpoint, umap1, umap2) %>%
+  mutate(umap_frac_data = 1.0)
+
+
+
+umap_data_100pct %>% ggplot(aes(x=umap1, y=umap2)) + geom_point(size=0.5)
+
+
+
+```
+
+
+```{r}
+
+umap_data = bind_rows(umap_data_20pct, umap_data_50pct, umap_data_100pct)
+
+
+write.table(umap_data, file="TARGETdb_umap_coords.tsv", quote=F, sep="\t", row.names = F)
+
+```
+
+
+
