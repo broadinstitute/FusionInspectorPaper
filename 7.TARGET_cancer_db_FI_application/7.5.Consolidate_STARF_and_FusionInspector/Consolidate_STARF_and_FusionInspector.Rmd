@@ -1,0 +1,171 @@
+---
+title: "Examine_Clustered_TARGETdb_Fusions"
+author: "bhaas"
+date: '2022-09-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggrepel)
+library(pheatmap)
+library(cowplot)
+library(ggforce)
+
+```
+
+
+```{r}
+
+data = read.table(gzfile("../../data/FusionInspector.v2.4.0.TARGET.decorated.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+data = data %>% select('sample', 'fusion_name', 'LeftBreakpoint', 'RightBreakpoint', 'JunctionReadCount', 'SpanningFragCount','FFPM', 
+                        'participant', 'core_participant_name', 'project',
+                        'sample_type', 'tumor_or_normal', "Cancer.Type", "structure_type", 
+                        "sorted_fusion_name", "partnerA", "partnerB", 'annots', 'fusion_cluster_att', 'leiden'
+                        )
+
+```
+
+```{r}
+
+starF_data = read.table(gzfile("../../data/STAR-Fusion.v1.10.0.TARGETdb.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)
+
+starF_data = starF_data %>% select(sample, fusion_name, LeftBreakpoint, RightBreakpoint, JunctionReadCount, SpanningFragCount, FFPM)
+
+starF_data$fusion_name = str_replace(starF_data$fusion_name, "--", "::")
+
+
+# so later we can examine reciprocal fusions
+
+starF_data = starF_data %>% rowwise %>% mutate(partnerA = sort(str_split(fusion_name, "::")[[1]])[1])
+
+starF_data = starF_data %>% rowwise() %>% mutate(partnerB = sort(str_split(fusion_name, "::")[[1]])[2])
+
+starF_data = starF_data %>% rowwise() %>% mutate(sorted_fusion_name = paste0(partnerA, "::", partnerB) ) 
+
+
+
+# incorporate sample type info
+starF_data = left_join(starF_data, data %>% select(sample, project, participant, core_participant_name, sample_type, tumor_or_normal, Cancer.Type) %>% unique(),
+                       by='sample')
+
+# incorporate annots and structure_type
+
+starF_data = left_join(starF_data, data %>% select(fusion_name, structure_type, annots) %>% unique(),
+                       by='fusion_name')
+
+```
+
+```{r}
+
+data = full_join(starF_data, data, by=c('sample', 'fusion_name', 'LeftBreakpoint', 'RightBreakpoint',
+                                        'participant', 'core_participant_name', 'project',
+                                        'sample_type', 'tumor_or_normal', "Cancer.Type", "structure_type", 
+                                        "sorted_fusion_name", "partnerA", "partnerB", 'annots'), 
+                 suffix=c('.starF', '.FI'))
+
+
+```
+
+
+
+
+```{r}
+
+data = data %>% mutate(FI_validated = ! is.na(FFPM.FI))
+
+
+table(data$FI_validated)
+
+```
+
+
+
+
+```{r}
+
+# update fusion cluster attributes
+
+data = data %>% mutate(fusion_cluster_att = ifelse(grepl("artifact", fusion_cluster_att), "Artifact", fusion_cluster_att)) %>%
+  mutate(fusion_cluster_att = ifelse(is.na(fusion_cluster_att) | fusion_cluster_att == "NA", "Other", fusion_cluster_att)) %>%
+  mutate(fusion_cluster_att = ifelse(FI_validated, fusion_cluster_att, "Untested"))
+
+
+data %>% group_by(fusion_cluster_att) %>% tally()
+
+```
+
+
+```{r}
+
+# incorporate the cosmic annotations
+
+all_cosmic_fusions = read.table("../../data/cosmic.list", header=F, sep="\t", stringsAsFactors = F)[,1]
+
+data = data %>% mutate(cosmic = fusion_name %in% all_cosmic_fusions)
+
+
+```
+
+
+
+```{r}
+
+# include annotation for a gene partner among the known set of ALL driver genes
+
+ALL_driver_genes = read.table("../ALL.cancer_driver_genes.list", header=T, sep="\t")[,1]
+
+
+data = data %>% mutate(contains_ALL_driver_gene = (partnerA %in% ALL_driver_genes | partnerB %in% ALL_driver_genes) )
+
+
+```
+
+
+
+```{r}
+
+# set top expressed fusion occurrence per participant as  primary isoform, preferentially choosing FI over STAR-F for same fusion variant
+
+data = data %>%
+  group_by(sample, tumor_or_normal, fusion_name) %>% 
+    arrange(desc(FFPM.FI), desc(FFPM.starF)) %>% 
+      mutate(is_primary = row_number() == 1) %>% 
+  ungroup()
+
+message('all fusions')
+data %>% group_by(FI_validated) %>% tally()
+
+message('primary fusions')
+data %>% filter(is_primary) %>% group_by(FI_validated) %>% tally()
+
+```
+
+
+
+
+
+```{r}
+
+# write summary combined fusion calls
+
+write.table(data, file="TARGET_STAR-Fusion-v1.10.0_FusionInspector-v2.4.0.fusions.tsv", quote=F, sep="\t", row.names=F)
+
+```
+
+
+
+
+
+```{r}
+
+# are there any STAR-F COSMIC predictions not called by FI ?
+
+data %>% filter(is_primary & ! FI_validated) %>% filter(cosmic)
+
+# very few and each with very low FFPM
+```
+
+
