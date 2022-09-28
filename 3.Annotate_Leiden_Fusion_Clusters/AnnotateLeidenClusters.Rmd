@@ -459,7 +459,7 @@ cosmic_paired_FAR_data = cosmic_FAR_data %>% select(sample, fusion_name, FAR_typ
 
 cosmic_fusions_here = cosmic_paired_FAR_data %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
 
-cosmic_FAR_ttest_pvals = NULL
+cosmic_FAR_test_pvals = NULL
 
 for (cosmic_fusion_select in cosmic_fusions_here) {
   
@@ -468,25 +468,58 @@ for (cosmic_fusion_select in cosmic_fusions_here) {
   left_FAR_vals = paired_FAR_data %>% pull(`5p-FAR`)
   right_FAR_vals = paired_FAR_data %>% pull(`3p-FAR`)
   
-  if (length(left_FAR_vals) > 1) {
+    if (length(left_FAR_vals) >= 3 && length(right_FAR_vals) >= 3) {
     t = t.test(left_FAR_vals, right_FAR_vals, alternative = 'less', paired = T)
-    cosmic_FAR_ttest_pvals = bind_rows(cosmic_FAR_ttest_pvals, data.frame(fusion=cosmic_fusion_select, tp_val = t$p.value))
-  }
+    w = wilcox.test(left_FAR_vals, right_FAR_vals, alternative = 'less', paired = T)
+    cosmic_FAR_test_pvals = bind_rows(cosmic_FAR_test_pvals, data.frame(fusion=cosmic_fusion_select, tp_val = t$p.value, wp_val = w$p.value))
+    
+    }
 }
 
+
+cosmic_FAR_test_pvals$tp_val_BH = p.adjust(cosmic_FAR_test_pvals$tp_val, method = 'BH')
+cosmic_FAR_test_pvals$wp_val_BH = p.adjust(cosmic_FAR_test_pvals$wp_val, method = 'BH')
+
+
+cosmic_FAR_test_pvals
 
 ```
 
 ```{r}
 
-cosmic_FAR_ttest_pvals$tp_val_BH = p.adjust(cosmic_FAR_ttest_pvals$tp_val, method = 'BH')
-
-cosmic_FAR_ttest_pvals = cosmic_FAR_ttest_pvals %>% mutate(signif = tp_val_BH < 0.05)
 
 
-cosmic_FAR_ttest_pvals %>% mutate(negLogP = -1*log10(tp_val_BH)) %>%
+cosmic_FAR_test_pvals = cosmic_FAR_test_pvals %>% mutate(signif = tp_val < 0.05)
+
+cosmic_FAR_test_pvals %>% 
+  mutate(negLogP = -1*log10(tp_val)) %>%
   ggplot(aes(x=fusion, y=negLogP, fill=signif)) + geom_col() + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) +
+  ggtitle("t-Test uncorrected")
+
+cosmic_FAR_test_pvals = cosmic_FAR_test_pvals %>% mutate(signif = tp_val_BH < 0.05)
+
+cosmic_FAR_test_pvals %>% 
+  mutate(negLogP = -1*log10(tp_val_BH)) %>%
+  ggplot(aes(x=fusion, y=negLogP, fill=signif)) + geom_col() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) +
+  ggtitle("t-Test corrected")
+
+cosmic_FAR_test_pvals =  cosmic_FAR_test_pvals %>% mutate(signif = wp_val < 0.05)
+
+cosmic_FAR_test_pvals %>% 
+   mutate(negLogP = -1*log10(wp_val)) %>%
+  ggplot(aes(x=fusion, y=negLogP, fill=signif)) + geom_col() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) +
+  ggtitle("Wilcoxon test uncorrected")
+
+cosmic_FAR_test_pvals =  cosmic_FAR_test_pvals %>% mutate(signif = wp_val_BH < 0.05)
+
+cosmic_FAR_test_pvals %>% 
+   mutate(negLogP = -1*log10(wp_val_BH)) %>%
+  ggplot(aes(x=fusion, y=negLogP, fill=signif)) + geom_col() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1))) +
+  ggtitle("Wilcoxon test corrected")
 
 ```
 
