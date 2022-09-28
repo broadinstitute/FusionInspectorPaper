@@ -216,6 +216,36 @@ plot(cosmic_sum_counts_per_cluster_plot)
 
 
 
+
+```{r}
+
+# examine breakdown of all fusion variant calls (not just occurrences)
+
+all_fusion_variant_counts_per_cluster = data %>% 
+    select(fusion_name, leiden) %>% 
+    group_by(fusion_name, leiden) %>% 
+    tally() %>% ungroup()
+
+high_FAR_artifact_clusters = c(71,79,78)
+RT_artifact_clusters = c(73, 77)
+
+ARTIFACT_CLUSTERS = c(high_FAR_artifact_clusters, RT_artifact_clusters)
+
+
+frac_variant_cluster_predictions = all_fusion_variant_counts_per_cluster %>% mutate(cluster_type = ifelse(leiden==21, "COSMIC-like", "Other")) %>%
+  mutate(cluster_type = ifelse(leiden %in% high_FAR_artifact_clusters, "high_FAR", cluster_type) ) %>%
+  mutate(cluster_type = ifelse(leiden %in% RT_artifact_clusters, "RT_artifact", cluster_type) )
+
+frac_variant_cluster_predictions %>% group_by(cluster_type) %>% mutate(sum_n = sum(n)) %>% select(cluster_type, sum_n) %>% unique() %>% ungroup() %>%
+  mutate(pct=prop.table(sum_n))
+
+
+# 1.6% cosmic-like
+# 1.2% artifact-like
+
+```
+
+
 ```{r}
 
 # all fusions, top isoforms
@@ -323,9 +353,6 @@ pg = plot_grid(p[[4]], cosmic_sum_counts_per_cluster_plot_NoLegend, sum_fusion_c
 
 plot(pg)
 
-ARTIFACT_CLUSTERS = c(71,79,78,73,77)
-
-
 
 ```
 
@@ -335,6 +362,29 @@ ARTIFACT_CLUSTERS = c(71,79,78,73,77)
 ggsave(pg, file="target_cluster_main_fig.pdf", width=12, height=8)
 
 ```
+
+
+```{r}
+
+# examine breakdown of fusion occurrences according to cluster groups
+
+frac_cluster_predictions = frac_cluster_predictions %>% mutate(cluster_type = ifelse(leiden==21, "COSMIC-like", "Other")) %>%
+  mutate(cluster_type = ifelse(leiden %in% high_FAR_artifact_clusters, "high_FAR", cluster_type) ) %>%
+  mutate(cluster_type = ifelse(leiden %in% RT_artifact_clusters, "RT_artifact", cluster_type) )
+
+frac_cluster_predictions %>% group_by(cluster_type) %>% mutate(sum_n = sum(n)) %>% select(cluster_type, sum_n) %>% unique() %>% ungroup() %>%
+  mutate(pct=prop.table(sum_n))
+
+# 1.7% cosmic-like occurrences
+# 0.7% artifact-like occurrences
+
+```
+
+
+
+
+```
+
 
 
 # Examine COSMIC enrichment stat significance
