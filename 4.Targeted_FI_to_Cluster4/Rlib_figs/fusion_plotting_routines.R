@@ -21,6 +21,9 @@ plot_cosmic_like_cluster_fraction = function(fusion_list) {
         mutate(frac_fusions = ifelse(frac_fusions > 0, frac_fusions, NA) ) %>%
         ggplot(aes(x=fusion_name, y=cluster_annot_type, fill=frac_fusions)) +
         geom_tile() +
+    theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
         ylab("Cluster Type") +
         theme(axis.text.y = element_text(size=rel(0.7)))  +
@@ -38,9 +41,12 @@ plot_frame_effect_fractions = function(fusion_list) {
         group_by(fusion_name, PROT_FUSION_TYPE) %>%
         tally() %>%
         mutate(frac=prop.table(n)) %>%
-        complete(PROT_FUSION_TYPE = c('INFRAME', 'INCL_NONCODING', 'FRAMESHIFT'), fill=list(n=0, frac=0.0))  %>%
+        #complete(PROT_FUSION_TYPE = c('INFRAME', 'INCL_NONCODING', 'FRAMESHIFT'), fill=list(n=0, frac=0.0))  %>%
         ggplot(aes(x=fusion_name, y=PROT_FUSION_TYPE, fill=frac)) +
         geom_tile() +
+        theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
         ylab("Coding Effect") +
         theme(axis.text.y = element_text(size=rel(0.7))) +
@@ -85,6 +91,9 @@ plot_tcga_sample_fractions = function(fusion_list) {
 
     tcga_type_fractions_plot = tcga_type_fractions %>%
         ggplot(aes(x=fusion_name, y=tissue_type, fill=tissue_fraction)) + geom_tile() +
+    theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
         theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
         theme(axis.text.y = element_text(size=rel(0.7))) +  scale_fill_continuous(high = "#132B43", low = "#56B1F7") +
         ylab("TCGA")
@@ -115,6 +124,9 @@ plot_gtex_sample_fractions = function(fusion_list) {
 
     gtex_type_fractions_plot = gtex_type_fractions %>% filter(fusion_name %in% fusion_list) %>%
         ggplot(aes(x=fusion_name, y=tissue_type, fill=tissue_fraction)) + geom_tile() +
+    theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
        theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
         theme(axis.text.y = element_text(size=rel(0.7))) + scale_fill_continuous(high = "#132B43", low = "#56B1F7") +
         ylab("GTEx")
@@ -136,6 +148,9 @@ plot_IN_COSMIC_indicator = function(fusion_list) {
         cosmic_indication_plot = plot_data %>%
             mutate(in_cosmic = ifelse(cosmic, TRUE, NA)) %>%
             ggplot(aes(x=fusion_name, y=TRUE, fill=in_cosmic)) + geom_tile() +
+            theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
             theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
             theme(axis.title.y=element_blank(), axis.text.y = element_blank(), axis.ticks.y=element_blank()) +
             scale_fill_manual(na.value="white", values="purple")
@@ -162,6 +177,9 @@ plot_IN_SIGNIF_EXPR_indicator = function(fusion_list, max_w_p = 0.05, min_fold_c
         signif_expr_indication_plot = data_to_plot %>%
             mutate(signif_expr = ifelse( (! is.na(w_p_BH)) & w_p_BH < max_w_p & fold_change > min_fold_change, TRUE, NA)) %>%
             ggplot(aes(x=fusion_name, y=TRUE, fill=signif_expr)) + geom_tile() +
+    theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
             theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
             theme(axis.title.y=element_blank(), axis.text.y = element_blank(), axis.ticks.y=element_blank()) +
             scale_fill_manual(na.value="white", values="orange")
@@ -209,7 +227,9 @@ plot_tumor_normal_logratio = function(fusion_list, remove_xlab=FALSE) {
         theme(axis.text.y = element_text(size=rel(0.7))) +
         ylab("#samples")
 
-
+    p = p + theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
     if (remove_xlab) {
         p = p + theme(axis.title.x=element_blank(),

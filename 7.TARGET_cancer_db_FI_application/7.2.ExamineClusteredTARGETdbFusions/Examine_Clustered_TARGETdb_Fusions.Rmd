@@ -23,6 +23,15 @@ data = read.table(gzfile("../../data/FusionInspector.v2.4.0.TARGET.decorated.tsv
 ```
 
 
+```{r}
+# general stats on cluster predictions
+
+data %>% group_by(fusion_cluster_att) %>% tally() %>%  mutate(pct=prop.table(n)*100)
+
+```
+
+
+
 
 ```{r}
 # merge the tumor or normal samples per patient, select the highest expressed fusion variant as representative
@@ -43,6 +52,7 @@ data = data %>% group_by(participant, fusion_name, LeftBreakpoint, RightBreakpoi
 
 nrow(data)
 ```
+
 
 
 
@@ -174,7 +184,10 @@ cosmic_counts_per_cluster = bind_rows(empty_counts_df, cosmic_counts_per_cluster
 # plot it
 
 
-cosmic_primary_fusion_counts_per_cluster_plot = cosmic_counts_per_cluster %>% ggplot(aes(x=leiden, y=n, fill=fusion_name)) + geom_col() + coord_flip() + ggtitle("COSMIC primary isoform count")
+cosmic_primary_fusion_counts_per_cluster_plot = cosmic_counts_per_cluster %>% ggplot(aes(x=leiden, y=n, fill=fusion_name)) + geom_col() + coord_flip() + ggtitle("COSMIC primary isoform count") +
+    theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
 
 plot(cosmic_primary_fusion_counts_per_cluster_plot)
@@ -188,7 +201,10 @@ plot(cosmic_primary_fusion_counts_per_cluster_plot)
 cosmic_sum_counts_per_cluster = cosmic_counts_per_cluster %>% group_by(leiden) %>% summarize(sum_n = sum(n))
 
 
-cosmic_sum_counts_per_cluster_plot = cosmic_sum_counts_per_cluster %>% ggplot(aes(x=leiden, y=sum_n)) + geom_col() + coord_flip() + ggtitle("COSMIC primary isoform count")
+cosmic_sum_counts_per_cluster_plot = cosmic_sum_counts_per_cluster %>% ggplot(aes(x=leiden, y=sum_n)) + geom_col() + coord_flip() + ggtitle("COSMIC primary isoform count") +
+    theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
 
 
@@ -220,7 +236,10 @@ top_fusion_counts_per_cluster = bind_rows(empty_counts_df, top_fusion_counts_per
 
 sum_fusion_counts_per_cluster = top_fusion_counts_per_cluster %>% group_by(leiden) %>% summarize(sum_n = sum(n))
 
-sum_fusion_counts_per_cluster_plot = sum_fusion_counts_per_cluster %>% ggplot(aes(x=leiden, y=sum_n)) + geom_col() + coord_flip() + ggtitle("Fusion primary isoform count")
+sum_fusion_counts_per_cluster_plot = sum_fusion_counts_per_cluster %>% ggplot(aes(x=leiden, y=sum_n)) + geom_col() + coord_flip() + ggtitle("Fusion primary isoform count") +
+    theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
 plot(sum_fusion_counts_per_cluster_plot)
 ```
@@ -237,7 +256,11 @@ cosmic_and_all_counts_df = cosmic_and_all_counts_df %>% spread(key=fusion_type, 
 cosmic_and_all_counts_df = cosmic_and_all_counts_df %>% mutate(frac_cosmic = cosmic/all)
 
 cosmic_frac_enrichment_plot = cosmic_and_all_counts_df %>% ggplot(aes(x=leiden, y=frac_cosmic)) + 
-    geom_col() + coord_flip() + ggtitle("Fraction COSMIC fusions")
+    geom_col() + coord_flip() + ggtitle("Fraction COSMIC fusions") +
+    theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
 plot(cosmic_frac_enrichment_plot)
 ```
 
@@ -279,7 +302,10 @@ frac_cluster_predictions$leiden = factor(frac_cluster_predictions$leiden, levels
 
 frac_cluster_att_predictions_plot = frac_cluster_predictions  %>%
   mutate(pct = ifelse(is.na(fusion_cluster_att ), 0, pct)) %>%
-  ggplot(aes(x=leiden, y=pct, fill=fusion_cluster_att)) + geom_col() + coord_flip() 
+  ggplot(aes(x=leiden, y=pct, fill=fusion_cluster_att)) + geom_col() + coord_flip() +
+    theme_bw() +
+            theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
 
 plot(frac_cluster_att_predictions_plot)
@@ -302,6 +328,14 @@ ARTIFACT_CLUSTERS = c(71,79,78,73,77)
 
 
 ```
+
+
+```{r}
+
+ggsave(pg, file="target_cluster_main_fig.pdf", width=12, height=8)
+
+```
+
 
 # Examine COSMIC enrichment stat significance
 
@@ -1047,16 +1081,26 @@ pg = plot_grid(cosmic_like_pred_plot,
                  ncol=1,
                  align='v',
                  axis='lr',
-                 rel_height2s = c(0.2, 0.2, 0.15, 0.1, 0.1, 0.1, 0.70)
+                 rel_heights = c(0.2, 
+                                  0.2, 
+                                  0.15, 
+                                  0.1, 
+                                  0.1, 
+                                  0.1,
+                                  0.70)
                  )
 
 
 plot(pg)
 
+```
+
+
+
+
+
+```{r}
 ggsave(pg, file="TARGET.cosmic-like_candidates.pdf", width=18, height=12)
-
-
-
 
 ```
 
@@ -1083,5 +1127,13 @@ top_new_candidates %>% filter(contains_ALL_driver_gene & reciprocal_fusion) %>% 
 # 28/108 = 26% 
 ```
 
+```{r}
+# counting C21 fusions
+data %>% filter(leiden == 21) %>% filter (is_primary) %>% nrow()
+# 3091
 
+data %>% filter(leiden == 21) %>% filter (is_primary) %>% select(fusion_name) %>% unique() %>% nrow()
+# 910
+
+```
 

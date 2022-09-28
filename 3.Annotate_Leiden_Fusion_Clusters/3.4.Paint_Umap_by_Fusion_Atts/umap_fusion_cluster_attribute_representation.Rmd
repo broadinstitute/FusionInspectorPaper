@@ -251,7 +251,42 @@ summary_fig = plot_grid(leiden_umap, by_TCGA_GTEx_representation_plot,
                         by_annot_splice_plot, by_consensus_splice_plot,
                         ncol=3)  
 
-ggsave(summary_fig, file='summary_fig.png' , width=17, height=17)
+ggsave(summary_fig, file='umap_paint_summary_fig.pdf' , width=17, height=17)
+
+
+
+```
+
+
+```{r}
+
+# need legend
+
+by_right_counter_ffpm_plot = data %>% 
+  ggplot(aes(x=umap1, y=umap2, color=adj_right_counter_ffpm ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() + ggtitle("right_counter_FFPM") 
+
+
+by_right_counter_ffpm_plot
+
+ggsave(by_right_counter_ffpm_plot, file="with_legend.pdf")
+
+```
+
+```{r}
+
+by_TCGA_GTEx_representation_plot = data %>% select(umap1, umap2, data_class, leiden) %>%
+  ggplot(aes(x=umap1, y=umap2, color=data_class ) ) + 
+        geom_point(alpha = 0.3, size=rel(0.5)) +
+        theme_bw() +
+  ggtitle("TCGA and GTEx representation") 
+#+ 
+#       geom_label_repel(data=umap.layout.cent, aes(label = leiden), size=3 ) + 
+#                             guides(colour = FALSE)
+
+
+by_TCGA_GTEx_representation_plot
 
 
 ```

@@ -26,7 +26,17 @@ data = read.table(gzfile("../../data/TARGET_STAR-Fusion-v1.10.0_FusionInspector-
 
 
 
+```{r}
 
+# number distinct fusion gene pairs
+data %>% select(fusion_name) %>% unique() %>% nrow()
+
+
+# number distinct validated by FI
+data %>% filter(FI_validated) %>% select(fusion_name) %>% unique() %>% nrow()
+
+
+```
 
 
 ```{r}
@@ -249,6 +259,22 @@ fusion_sample_type_counts
 
 ```
 
+
+```{r}
+# examine the cosmic fractions
+
+
+fusion_sample_type_counts %>% filter(cosmic) %>% arrange(desc(sample_type_frac))
+
+
+```
+
+```{r}
+fusion_sample_type_counts %>% ungroup()  %>%  filter(cosmic) %>% select(fusion_name) %>% unique() %>% nrow()
+
+```
+
+
 ```{r}
 
 # find some new candidates of interest
@@ -262,6 +288,21 @@ top_new_candidates = primary_data %>%
 
 top_new_candidates  %>% select(fusion_name, tot_sample_count_w_fusion) %>% unique() %>% arrange(desc(tot_sample_count_w_fusion))
 ```
+
+
+```{r}
+
+# counts of recurrent TARGET fusions
+
+nrow(top_new_candidates) 
+# 44555
+
+top_new_candidates %>% select(fusion_name) %>% unique() %>% nrow()
+# 5222
+
+
+```
+
 
 
 ```{r}
@@ -301,6 +342,34 @@ top_new_candidates =  top_new_candidates %>% filter(fusion_name %in% FI_validate
 
 
 ```{r}
+
+sample_frac_ranked_fusions = top_new_candidates %>% select(project, fusion_name, sample_type_frac) %>% unique() %>% group_by(project) %>% arrange(desc(sample_type_frac)) %>% mutate(ranking=row_number()) %>% ungroup() 
+
+sample_frac_ranked_fusions  %>%
+  ggplot(aes(x=ranking, y=sample_type_frac)) + 
+  geom_point(aes(color=project)) + geom_line(aes(color=project)) +
+  scale_x_log10() +
+  theme_bw() +
+  geom_hline(yintercept = 0.10, color='black', linetype = 'dotted')  +
+  geom_point(data = sample_frac_ranked_fusions %>% filter(fusion_name %in% all_cosmic_fusions), aes(x=ranking, y=sample_type_frac), color='black') +
+     theme(axis.text.y = element_text(size=rel(0.7)))  +
+        scale_fill_continuous(high = "#132B43", low = "#56B1F7", na.value="white") +
+         theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+
+```
+
+```{r}
+
+# how many recurrent (min 3) fusions do we have for each project?
+
+sample_frac_ranked_fusions %>% group_by(project) %>% arrange(desc(ranking)) %>% filter(row_number() == 1)
+
+```
+
+
+```{r}
 write.table(top_new_candidates, file="TARGET.all_candidates.tsv", quote=F, sep="\t", row.names = F)
 
 
@@ -328,6 +397,8 @@ top_new_candidates_min_sample_frac = left_join(top_new_candidates %>% filter(sam
                                                top_new_candidates,  
                                                by='fusion_name')
 
+
+top_new_candidates_min_sample_frac %>% select(fusion_name, participant) %>% unique() %>% nrow()
 ```
 
 
@@ -687,6 +758,10 @@ top_new_candidates_top_sample_frac %>% arrange(desc(sample_type_frac))
 
 ```
 
+```{r}
+top_new_candidates_top_sample_frac %>% filter(cosmic)
+
+```
 
 
 ```{r}
