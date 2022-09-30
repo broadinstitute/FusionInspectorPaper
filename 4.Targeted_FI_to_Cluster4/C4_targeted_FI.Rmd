@@ -28,6 +28,7 @@ fusion_annot_class_stats = fusion_data %>% filter(is_primary) %>%
     mutate(annot_type = fusion_cluster_att) %>%
     mutate(annot_type = ifelse((is.na(fusion_cluster_att) | fusion_cluster_att == "NA"), "other", fusion_cluster_att)) %>%
     mutate(annot_type = ifelse(grepl("artifact", fusion_cluster_att), "artifact", annot_type)) %>%
+    mutate(annot_type = ifelse(pred_cluster %in% c(49,51), "high_counter_evidence", annot_type)) %>% 
     group_by(fusion_name, cosmic, annot_type) %>% tally() %>% mutate(frac=prop.table(n)) %>%
     select(-n) %>%
     spread(key=annot_type, value=frac, fill=0) 
@@ -38,6 +39,30 @@ fusion_annot_class_stats
 
 write.table(fusion_annot_class_stats, file="fusion_annot_class_stats.tsv", quote=F, sep="\t", row.names = F)
 ```
+
+```{r}
+# how many have cosmic-like predictions?
+fusion_annot_class_stats%>% filter(`COSMIC-like` > 0) %>% nrow()
+# 205  (and so, 236-305 = 31 do not)
+
+
+```
+
+
+```{r}
+# how many counter-evidence >= 10%
+fusion_annot_class_stats%>% filter( high_counter_evidence >= 0.1) %>% nrow()
+
+# 7
+```
+
+```{r}
+# how many with artifacts?
+fusion_annot_class_stats%>% filter( artifact > 0)
+# 9
+
+```
+
 
 ```{r}
 # pull in the original STAR-Fusion results for T/N findings and other annotated fusion attributes.
