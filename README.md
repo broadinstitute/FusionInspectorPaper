@@ -39,7 +39,7 @@ The structure of this work can be divided into the following order:
     - [data/STAR-Fusion.v1.10.0.TARGETdb.tsv.gz](data/STAR-Fusion.v1.10.0.TARGETdb.tsv.gz) : STAR-Fusion fusion predictions
     - [data/FusionInspector.v2.4.0.TARGET.tsv.gz](data/FusionInspector.v2.4.0.TARGET.tsv.gz) : FusionInspector fusion in silico validations
     - [dataFusionInspector.v2.4.0.TARGET.decorated.tsv.gz](FusionInspector.v2.4.0.TARGET.decorated.tsv.gz) : FusionInspector fusion results decorated with sample metadata, umap coordinates, and various fusion annotations.
-    
+
     
 # Supplemental Code
 
@@ -52,12 +52,15 @@ The structure of this work can be divided into the following order:
 
 - [2.Scaling_n_Clustering_Fusions/Scaling_and_Clustering_Fusions.Rmd](2.Scaling_n_Clustering_Fusions/Scaling_and_Clustering_Fusions.Rmd) : demonstration of the workflow used to scale fusion attributes, define fusion clusters, and analyze the COSMIC fusion content of those clusters.
 
-- [3.Annotate_Leiden_Fusion_Clusters/3.1.Examine_Leiden_Res_Cosmic_Enrichment](3.Annotate_Leiden_Fusion_Clusters/AnnotateLeidenClusters.Rmd) : Examines clusters of fusions derived from (B) above, annotates the clusters according to COSMIC-like, artifact-like, or other, and explores characteristics of C4 and COSMIC fusions enriched in C4.
-  - yields Figure 5 and S6
-  
-- [3.Annotate_Leiden_Fusion_Clusters/3.1.Examine_Leiden_Res_Cosmic_Enrichment/ExamineLeidenResolutionCosmicEnrichment.Rmd](3.Annotate_Leiden_Fusion_Clusters/3.1.Examine_Leiden_Res_Cosmic_Enrichment/ExamineLeidenResolutionCosmicEnrichment.Rmd) : Exploration of Leiden resolution parameter on fusion clustering and COSMIC fusion enrichments.
-  - yields Figure S19
-  
+- [3. Exploration of TCGA and GTEx fusion clusters]
+    - [3.Annotate_Leiden_Fusion_Clusters/AnnotateLeidenClusters.Rmd](3.Annotate_Leiden_Fusion_Clusters/AnnotateLeidenClusters.Rmd) : Examines clusters of fusions derived from (B) above, annotates the clusters according to COSMIC-like, artifact-like, or other, and explores characteristics of C4 and COSMIC fusions enriched in C4. Yields Figure 5 and S6
+    - [3.1.Examine_Leiden_Res_Cosmic_Enrichment/ExamineLeidenResolutionCosmicEnrichment.Rmd](3.Annotate_Leiden_Fusion_Clusters/3.1.Examine_Leiden_Res_Cosmic_Enrichment/ExamineLeidenResolutionCosmicEnrichment.Rmd) : Exploration of Leiden resolution parameter on fusion clustering and COSMIC fusion enrichments. Yields Figure S19
+    - [3.2.EvaluateClusterPredictionAccuracy/Evaluate_cluster_prediction.Rmd](3.Annotate_Leiden_Fusion_Clusters/3.2.EvaluateClusterPredictionAccuracy/Evaluate_cluster_prediction.Rmd) : Examines fusion cluster prediction accuracy of the random forest predictor using 5-fold cross-validation. Yields Figure S8
+    - [3.3.Examine_Fusion_Cluster_Variation_Among_Matched_Samples/Examine_TCGA_Bioreps_Cluster_Pred_Consistency.Rmd](3.Annotate_Leiden_Fusion_Clusters/3.3.Examine_Fusion_Cluster_Variation_Among_Matched_Samples/Examine_TCGA_Bioreps_Cluster_Pred_Consistency.Rmd) : Exploring biological variation of fusion cluster predictions among TCGA same-participant samples. Yields Figure S9.
+    - [3.4.Paint_Umap_by_Fusion_Atts/umap_fusion_cluster_attribute_representation.Rmd](3.Annotate_Leiden_Fusion_Clusters/3.4.Paint_Umap_by_Fusion_Atts/umap_fusion_cluster_attribute_representation.Rmd) Fusion variants are painted in the UMAP according to their various attributes. Yields Figure S5.
+    
+
+    
 - [4.Targeted_FI_to_Cluster4/C4_targeted_FI.Rmd](4.Targeted_FI_to_Cluster4/C4_targeted_FI.Rmd) : Examines characteristics of the 236 fusion genes based on occurrences identified in (D) above.
    - running 'make_Figures.Rmd' after the above yields Figures 6 and S7
    
@@ -73,9 +76,14 @@ The structure of this work can be divided into the following order:
 
 - [7. Analysis of TARGET pediatric cancer fusions]
     - [7.TARGET_cancer_db_FI_application/TARGET_fusion_analysis.Rmd](7.TARGET_cancer_db_FI_application/TARGET_fusion_analysis.Rmd) : overview of pediatric cancer fusions identified via STAR-Fusion and FusionInspector, with a focus on exploring which COSMIC fusions were found and their distribution among the pediatric cancer types. Yields Figure S15.
-    - [7.TARGET_cancer_db_FI_application/7.0.ClusterTargetFusions/cluster_TARGETdb_fusions.Rmd](7.TARGET_cancer_db_FI_application/7.0.ClusterTargetFusions/cluster_TARGETdb_fusions.Rmd) : Clustering of TARGET pediatric cancer fusion variants according to FusionInspector attributes.
-    - [7.TARGET_cancer_db_FI_application/7.1.DecorateTargetFusions/DecorateTargetFusions.Rmd](7.TARGET_cancer_db_FI_application/7.1.DecorateTargetFusions/DecorateTargetFusions.Rmd) : coded used to decorate the FusionInspector fusions with the annotations and meta data.
-    - [7.2.ExamineClusteredTARGETdbFusions/Examine_Clustered_TARGETdb_Fusions.Rmd](7.2.ExamineClusteredTARGETdbFusions/Examine_Clustered_TARGETdb_Fusions.Rmd) : analysis of TARGET pediatric cancer fusion clusters, including COSMIC fusion content and enrichment. Yields Figures 7, 8, and S16.
-     
+    - [7.0.ClusterTargetFusions/cluster_TARGETdb_fusions.Rmd](7.TARGET_cancer_db_FI_application/7.0.ClusterTargetFusions/cluster_TARGETdb_fusions.Rmd) : Clustering of TARGET pediatric cancer fusion variants according to FusionInspector attributes.
+    - [7.1.DecorateTargetFusions/DecorateTargetFusions.Rmd](7.TARGET_cancer_db_FI_application/7.1.DecorateTargetFusions/DecorateTargetFusions.Rmd) : coded used to decorate the FusionInspector fusions with the annotations and meta data.
+    - [7.2.ExamineClusteredTARGETdbFusions/Examine_Clustered_TARGETdb_Fusions.Rmd](7.TARGET_cancer_db_FI_application/7.2.ExamineClusteredTARGETdbFusions/Examine_Clustered_TARGETdb_Fusions.Rmd) : analysis of TARGET pediatric cancer fusion clusters, including COSMIC fusion content and enrichment. Yields Figures 7, 8, and S16.
+    - [7.3.AllRecurrentTARGETdbFusions/Examine_ALL_Recurrent_TARGETdb_Fusions.Rmd](7.TARGET_cancer_db_FI_application/7.3.AllRecurrentTARGETdbFusions/Examine_ALL_Recurrent_TARGETdb_Fusions.Rmd) - exploration of all recurrent TARGET pediatric cancer fusions, regardless of what fusion clusters they correspond to.
+    - [7.4.TARGETdbFusionSampleStats/TARGET_fusion_sample_stats.Rmd](7.TARGET_cancer_db_FI_application/7.4.TARGETdbFusionSampleStats/TARGET_fusion_sample_stats.Rmd) - examining median counts of fusions per pediatric cancer type, and comparing tumor samples to normal samples.
+    - [7.5.Consolidate_STARF_and_FusionInspector/Consolidate_STARF_and_FusionInspector.Rmd](7.TARGET_cancer_db_FI_application/7.5.Consolidate_STARF_and_FusionInspector/Consolidate_STARF_and_FusionInspector.Rmd) : consolidates STAR-Fusion and FusionInspector fusion predictions as:  data/TARGET_STAR-Fusion-v1.10.0_FusionInspector-v2.4.0.fusions.tsv.gz, sets is_primary to highest expressed FusionInspector variant or to the STAR-Fusion variant where it wasn't in silico validated by FI, and sets FI_validated flag to indicate which were in silico validated as such. This data file is useful for having a more comprehensive table of fusions including those like IGH-fusions where FI was not configured to examine.
+    - [7.6.IGH_fusions/IGH_fusion_analysis.Rmd](7.TARGET_cancer_db_FI_application/7.6.IGH_fusions/IGH_fusion_analysis.Rmd) : Identification of samples containing the IGH::CRLF2 and P2RY8::CRLF2 fusions in pediatric ALL.
+    
+    
 
 
