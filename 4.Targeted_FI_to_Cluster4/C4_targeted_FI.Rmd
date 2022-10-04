@@ -20,6 +20,20 @@ fusions_of_interest = fusion_data %>% select(fusion_name) %>% unique() %>% pull(
 
 ```
 
+
+```{r}
+# count GTEx samples
+sum(grepl("GTEX", FI_samples))
+# 1009
+
+# count TCGA samples:
+sum(! grepl("GTEX", FI_samples))
+# 2764
+
+```
+
+
+
 Assess fusion cluster prediction types.
 
 ```{r}
@@ -39,6 +53,20 @@ fusion_annot_class_stats
 
 write.table(fusion_annot_class_stats, file="fusion_annot_class_stats.tsv", quote=F, sep="\t", row.names = F)
 ```
+
+
+
+```{r}
+# stats for the cosmic subset:
+fusion_annot_class_stats %>% filter(cosmic & `COSMIC-like` > 0) %>% arrange(`COSMIC-like`)
+#25 / 31 
+
+```
+
+
+
+
+
 
 ```{r}
 # how many have cosmic-like predictions?
@@ -144,6 +172,8 @@ batch_ranked_fusion_plots(fusions_ranked_by_logTN)
 # How many of these fusions are found at substantial levels in normal tissues?
 
 orig_STARF_tumor_normal_stats %>% arrange(desc(logTN)) %>% filter(abs(normal) >= 5) %>% nrow()
+
+# 86
 
 ```
 

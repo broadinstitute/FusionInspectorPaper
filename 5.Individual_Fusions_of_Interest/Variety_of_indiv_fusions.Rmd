@@ -39,15 +39,18 @@ fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.C4_targeted_fusi
 
 FI_samples = read.table("../data/FusionInspector.v2.4.0.C4_targeted_fusions.sample_list", header=F, stringsAsFactors = F)[,1]
 
+```
+
+```{r}
+
 fusion_annot_class_stats = fusion_data %>% filter(is_primary) %>%
     mutate(annot_type = fusion_cluster_att) %>%
-    mutate(annot_type = ifelse((is.na(fusion_cluster_att) | fusion_cluster_att == "NA"), "other", fusion_cluster_att)) %>%
+    mutate(annot_type = ifelse((is.na(fusion_cluster_att) | fusion_cluster_att == "NA"), "other", annot_type)) %>%
     mutate(annot_type = ifelse(grepl("artifact", fusion_cluster_att), "artifact", annot_type)) %>%
-    mutate(annot_type = ifelse(grepl("cosmic", fusion_cluster_att), "cosmic-like", annot_type)) %>%
     group_by(fusion_name, cosmic, annot_type) %>% tally() %>% mutate(frac=prop.table(n)) %>%
     select(-n) %>%
     spread(key=annot_type, value=frac, fill=0) %>%
-    arrange(desc(`cosmic-like`))
+    arrange(desc(`COSMIC-like`))
 
 fusion_fraction_C4 = fusion_data %>% 
     filter(is_primary) %>%
@@ -152,6 +155,18 @@ test_fusion_expr_ranking = function(fusion_name_select, min_FFPM=0) {
 
 
 ## TMPRSS2--ERG
+
+```{r}
+
+# orig findings w/ STAR-F
+orig_STARF_fusion_preds %>% filter(fusion_name == "TMPRSS2::ERG") %>% select(sample) %>% unique()
+
+
+
+```
+
+
+
 ```{r}
 
 # TMPRSS2--ERG in FI screen:
@@ -267,6 +282,7 @@ examine_sample_fractions_with_fusion("VCL::ADK")
 ## PVT1--MYC
 
 ```{r}
+# orig STARF stats 
 orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1::MYC") %>% 
     filter(is_primary) %>% 
     group_by(data_class, tissue_type, tumor_or_normal) %>% 
@@ -278,12 +294,14 @@ orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1::MYC") %>%
     group_by(data_class, tumor_or_normal) %>% 
     tally() %>% 
     arrange(desc(n)) 
+
+# 20 samples initially identified w/ PVT1::MYC (14 TCGA tumor, 1 TCGA normal, 5 GTEx normal)
 
 ```
 
 
 ```{r}
-
+# FI stats from targeted survey
 fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% 
     filter(is_primary) %>% 
     group_by(data_class, tissue_type, tumor_or_normal) %>% 
@@ -295,6 +313,8 @@ fusion_data %>% filter(fusion_name == "PVT1::MYC") %>%
     group_by(data_class, tumor_or_normal) %>% 
     tally() %>% 
     arrange(desc(n)) 
+
+# 32 samples in silico validated with PVT1::MYC by FI
 
 ```
 ```{r}
@@ -362,11 +382,19 @@ fusion_data %>% filter(fusion_name == "PVT1::MYC") %>%
 ```{r}
 
 fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% 
-    filter(is_primary) %>% arrange(FFPM) %>% select(sample, FFPM)
+    filter(is_primary) %>% arrange(FFPM) %>% select(sample, FFPM) %>% arrange(desc(FFPM))
 
-
+# 32 sample occurrences, most highly expressed at 19 FFPM
 ```
 
+```{r}
+
+fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% 
+    filter(is_primary) %>%
+    filter(FFPM < 0.1) %>% nrow()
+
+# 21 occurrences below 0.1 FFPM expression
+```
 
 
 
@@ -411,7 +439,11 @@ bcr_abl1_sample_counts = fusion_data %>% filter(grepl("BCR", fusion_name), grepl
     group_by(fusion_name, tissue_type, tumor_or_normal) %>%
     tally()
 
+bcr_abl1_sample_counts 
 
+```
+
+```{r}
 bcr_abl1_sample_counts %>% ggplot(aes(x=fusion_name, y=n, fill=tissue_type)) + geom_col() + facet_wrap(~tumor_or_normal)
 
 ```
