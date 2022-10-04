@@ -21,7 +21,19 @@ fusion_data = read.table(gzfile("../data/FusionInspector.v2.4.0.examine_recurren
 
 fusion_data$leiden = factor(fusion_data$leiden)
 
+fusion_data %>% nrow()
+# 53240 fusion variants
 
+fusion_data %>% filter(is_primary) %>% nrow()
+# 38591 primary fusion occurrences
+
+fusion_data %>% filter(! is_primary) %>% nrow()
+# 14649 alt fusion variants
+
+```
+
+
+```{r}
 # Can experiment with the code below to control for fusions having high prevalences among the samples. C4 still looks special here.
 # fusion_data = fusion_data %>% filter(is_primary) %>% group_by(fusion_name) %>% filter(row_number() <= 3) %>% ungroup()  ## TESTING
 
@@ -317,12 +329,20 @@ pheatmap(all_median_vals_df[rownames(all_median_vals_df) %in% high_FAR_microH_bi
         main="high FAR and microH, likely bioinf artifacts" 
              )
 
+# high counter-evidence clusters
+high_counter_evidence_clusters =  c(49,51)
+pheatmap(all_median_vals_df[rownames(all_median_vals_df) %in% high_counter_evidence_clusters,],
+        cluster_cols=colclust,
+        main="high counter-evidence clusters" 
+             )
 
 
 
 source("../Rlib/annotate_leiden_clusters.R")
 
 fusion_data = annotate_leiden_clusters(fusion_data)
+
+fusion_data = fusion_data %>% mutate(fusion_cluster_att = ifelse(leiden %in% high_counter_evidence_clusters, "high-counter-evidence", fusion_cluster_att))
 
 ```
 
@@ -335,10 +355,12 @@ fusion_data %>% filter(is_primary) %>% group_by(fusion_cluster_att) %>% tally() 
 # cosmic-like	1511	0.03915421
 # expr_microH_RT_artifact?	756	0.01959006
 # high_FAR_microH_bioinf_artifact?	444	0.01150527
-# high_FAR_microH_bioinf_artifact?	444	0.01150527		
+# high-counter-evidence	373	0.009665466
 # NA	35880	0.92975046
 
 ```
+
+
 
 ```{r}
 
@@ -356,6 +378,7 @@ artifact_fusion_data
 artifact_fusion_fraction = artifact_fusion_data %>% summarize(sum(pct)) %>% pull()
 
 artifact_fusion_fraction
+# 0.03109533
 
 ```
 
@@ -614,8 +637,10 @@ cosmic_cluster_info_stats %>% filter(yes_cosmic >= 2) %>%
 
 fusion_data %>% filter(is_primary) %>% group_by(leiden) %>% tally()
 
-fusion_data %>% filter(is_primary) %>% select(leiden, fusion_name) %>% unique() %>% group_by(leiden) %>% tally()
+# 1511 C4 fusion occurrences
 
+fusion_data %>% filter(is_primary) %>% select(leiden, fusion_name) %>% unique() %>% group_by(leiden) %>% tally()
+# 835 C4 fusions
 
 ```
 
