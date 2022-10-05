@@ -64,6 +64,8 @@ write.table(samples_to_process, file="samples_containing_earlier_missed_COSMIC_f
 
 samples_to_process
 
+# 46 samples
+
 ```
 
 
@@ -138,6 +140,18 @@ message("fraction of distinct fusions pred as C4: ", fraction_fusions_with_C4_pr
 
 ```
 
+```{r}
+
+# fraction of fusion occurrences falling into clusters containing other earlier-defined COSMIC-containing (min 2) clusters
+
+clusters_w_min2_COSMIC = c(4, 6, 39, 38, 23, 8, 54, 13, 46, 34, 21, 7, 26, 10, 12, 3, 18)
+
+new_data_COSMIC %>% mutate(cosmic_containing_cluster = ifelse(pred_cluster %in% clusters_w_min2_COSMIC, "cosmic-containing", 'other')) %>% group_by(cosmic_containing_cluster) %>% tally() %>% mutate(pct=prop.table(n))
+
+# Over 80% of these COSMIC fusion occurrences were predicted to other COSMIC fusion containing clusters
+
+```
+
 
 
 ```{r}
@@ -169,6 +183,6 @@ new_data_COSMIC %>% filter(fusion_name %in% c('MYB::NFIB', 'NUP214::ABL1') & pre
 
 new_data_COSMIC %>% filter(pred_cluster == 4) %>% select(fusion_name) %>% unique()
 
-
+# 11
 
 ```
