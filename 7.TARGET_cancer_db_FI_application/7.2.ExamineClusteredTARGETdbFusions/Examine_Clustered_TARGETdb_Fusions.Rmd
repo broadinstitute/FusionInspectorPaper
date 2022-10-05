@@ -34,10 +34,9 @@ data %>% group_by(fusion_cluster_att) %>% tally() %>%  mutate(pct=prop.table(n)*
 
 
 ```{r}
+#############################
 # merge the tumor or normal samples per patient, select the highest expressed fusion variant as representative
-
-#samples_select = data %>% group_by(participant, tumor_or_normal) %>% filter(row_number() == 1) %>% pull(sample)
-#data = data %>% filter(sample %in% samples_select)
+#############################
 
 nrow(data)
 
@@ -526,6 +525,16 @@ fusion_sample_type_counts %>% filter(cosmic & tumor_or_normal == "normal") %>% g
 fusion_sample_type_counts %>% filter(cosmic & tumor_or_normal == "tumor") %>% ggplot(aes(x=fusion_name, y=sample_type_frac, fill=project)) + geom_col() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
+
+```
+
+
+
+```{r}
+
+# how many cosmic fusions above?
+data %>% filter(cosmic) %>% select(fusion_name ) %>% unique() %>% nrow()
+# 30
 
 ```
 
@@ -1265,6 +1274,10 @@ fusion_sample_type_counts %>% filter(fusion_name == "TCF3::PBX1")
 ```
 
 ```{r}
+
+# auditing count of top_new_candidates
+top_new_candidates %>% select(fusion_name) %>% unique() %>% nrow()
+# 108
 
 # how many of the top candidates involve an aLL candidate driver gene?
 top_new_candidates %>% filter(contains_ALL_driver_gene) %>% select(fusion_name) %>% unique()  %>% nrow()

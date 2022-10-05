@@ -89,9 +89,12 @@ STARF_data %>% select(sample, fusion_name) %>% nrow()
 # 228612
 
 # how many STAR-F fusion occurrences
-
 STARF_data %>% filter(is_primary) %>% select(sample, fusion_name)  %>% nrow()
 # 213786
+
+# number of unique gene pairs:
+STARF_data %>% select(fusion_name) %>% unique() %>% nrow()
+# 108661
 
 ```
 
@@ -134,6 +137,15 @@ FI_data %>% filter(is_primary) %>% select(sample, fusion_name)  %>% nrow()
 182807 / 213786 = 0.86
 
 so, 86% of the STAR-F identified fusions were further 'in silico validated' by FusionInspector.
+
+
+```{r}
+
+# count number of distinct fusion gene pairs represented:
+FI_data %>% select(fusion_name)  %>% unique() %>% nrow()
+
+
+```
 
 
 # COSMIC fusions in TARGET w/ comparison to TCGA

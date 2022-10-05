@@ -289,3 +289,23 @@ save.image("fusion_data_for_main_figs.Rdata")
 ```
 
 
+
+# misc stats
+
+```{r}
+
+orig_STARF_tumor_normal_stats %>% filter(fusion_name == "FGFR3::TACC3")
+
+```
+
+```{r}
+
+orig_STARF_tumor_normal_stats %>% filter(fusion_name == "CCAT1::CASC8")
+
+orig_STARF_fusion_preds %>% filter(fusion_name == "CCAT1::CASC8") %>% select(sample) %>% unique() %>% arrange(sample)
+
+
+```
+
+
+
