@@ -680,7 +680,7 @@ length(fusions_found_in_normals)
 # examine fraction of fusions found in C21
 
 fusion_fraction_C21 = data %>% filter(is_primary) %>%  
-  group_by(fusion_name, sorted_fusion_name, annots, leiden) %>% 
+  group_by(fusion_name, sorted_fusion_name, partnerA, partnerB, annots, leiden) %>% 
   tally(name='count_in_C21') %>% 
   mutate(frac_leiden_C21=prop.table(count_in_C21)) %>% 
   filter(leiden==COSMIC_cluster) %>%
@@ -800,7 +800,7 @@ top_new_candidates  %>%  select(-c(sorted_fusion_name, annots))
 
 ```{r}
 sum_frac = top_new_candidates %>% 
-  select(fusion_name, tot_sample_count_w_fusion, cosmic, sample_type_frac, project) %>% 
+  select(fusion_name, partnerA, partnerB, tot_sample_count_w_fusion, cosmic, sample_type_frac, project) %>% 
   unique() %>%
   group_by(fusion_name) %>% 
   mutate(sum_frac = sum(sample_type_frac)) %>% 
@@ -894,7 +894,7 @@ reciprocal_fusions_data %>% filter(is_primary) %>% arrange(sample, sorted_fusion
 top_new_candidates = left_join(top_new_candidates, 
                                reciprocal_fusions_data %>% filter(leiden == COSMIC_cluster) %>% select(fusion_name, partnerA, partnerB) %>% 
                                  unique() %>% mutate(reciprocal_fusion = TRUE),
-                               by='fusion_name')
+                               by=c('fusion_name', 'partnerA', 'partnerB' ) )
 
 top_new_candidates %>% filter(reciprocal_fusion) %>% arrange(sorted_fusion_name, fusion_name)
 
@@ -1281,7 +1281,7 @@ top_new_candidates %>% select(fusion_name) %>% unique() %>% nrow()
 
 # how many of the top candidates involve an aLL candidate driver gene?
 top_new_candidates %>% filter(contains_ALL_driver_gene) %>% select(fusion_name) %>% unique()  %>% nrow()
-# 28
+# 51  (47%)
 
 # and how many of these have evidence of a reciprocal fusion?
 
@@ -1289,7 +1289,7 @@ top_new_candidates %>% filter(contains_ALL_driver_gene & reciprocal_fusion) %>% 
 
 # all ALL-driver-gene containing fusions have evidence of recprocal fusions
 
-# 28/108 = 26% 
+# 28/51 = 55% 
 ```
 
 ```{r}
@@ -1302,3 +1302,65 @@ data %>% filter(leiden == 21) %>% filter (is_primary) %>% select(fusion_name) %>
 
 ```
 
+
+# counting new candidate fusions containing ALL driver genes
+```{r}
+
+top_new_candidates_ALL_driver = top_new_candidates %>% filter(contains_ALL_driver_gene) %>% select(fusion_name) %>% unique()
+
+
+top_new_candidates_ALL_driver
+
+```
+
+```{r}
+
+top_new_candidate_fusions[grepl("KMT2A", top_new_candidate_fusions)]
+
+
+```
+
+
+
+```{r}
+
+top_new_candidates_ALL_driver %>% filter(grepl("KMT2A",fusion_name) )
+
+```
+
+
+```{r}
+
+top_new_candidates_ALL_driver %>% filter(grepl("PAX5",fusion_name) )
+
+top_new_candidates_ALL_driver %>% filter(grepl("ZNF384",fusion_name) )
+
+top_new_candidates_ALL_driver %>% filter(grepl("MLLT10",fusion_name) )
+
+
+```
+
+
+```{r}
+
+top_new_candidates_ALL_driver %>% filter(grepl("NUP98",fusion_name) )
+
+top_new_candidates_ALL_driver %>% filter(grepl("TCF3",fusion_name) )
+
+top_new_candidates_ALL_driver %>% filter(grepl("ETV6",fusion_name) )
+
+```
+
+
+
+
+
+```{r}
+
+top_new_candidates %>% filter(grepl("PTMA",fusion_name) ) %>% select(fusion_name) %>% unique()
+
+top_new_candidates %>% filter(grepl("EIF4A1|RP11-186B7.4",fusion_name) ) %>% select(fusion_name) %>% mutate(fusion_name = str_replace(fusion_name, "RP11-186B7.4", "EIF4A1")) %>% unique()
+
+top_new_candidates %>% filter(grepl("SEPT14",fusion_name) ) %>% select(fusion_name) %>% unique()
+
+```
