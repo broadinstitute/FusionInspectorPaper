@@ -517,6 +517,18 @@ fusion_data %>% filter(grepl("SSX", fusion_name)) %>% filter(grepl("SS18", fusio
     ggplot(aes(x=FAR_type, y=FAR_val)) + geom_boxplot() + facet_wrap(~fusion_name)
 ```
 
+```{r}
+
+fusion_data %>% filter(grepl("SSX", fusion_name)) %>% filter(grepl("SS18", fusion_name)) %>% 
+    filter(is_primary) %>% select(fusion_name, pred_cluster)
+
+
+# COSMIC fusions SS18::SSX1 and SS18::SSX2, known drivers of synovial sarcoma (Clark et al., 1994, Gazendam et al., 2021), are in other clusters (C38 & C39)
+
+```
+
+
+
 ## TFG--GPR128
 
 ```{r}

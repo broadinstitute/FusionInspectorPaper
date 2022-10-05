@@ -24,6 +24,8 @@ tumor_normal_stats %>% filter(fusion_name == "FSIP1::RP11-624L4.1")
 # count number of BRCA tumor samples:
 orig_starF_preds %>% filter(tumor_or_normal == "tumor" & tissue_type == "BRCA") %>% select(data_class, sample) %>% unique() %>% count()
 
+# 240/1086 = 22% of BRCA tumor samples
+
 ```
 
 
