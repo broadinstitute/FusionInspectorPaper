@@ -109,6 +109,7 @@ examine_sample_fractions_with_fusion = function(input_fusion_name) {
 
 examine_sample_fractions_with_fusion("KANSL1::ARL17")
 
+# median 31% of individuals
 
 ```
 

@@ -91,7 +91,7 @@ get_fusion_counts_vs_min_FFPM_via_tissue_type = function (data, min_ffpm_vals = 
         data_filt = data %>% filter(FFPM >= min_ffpm)
         
         counts_per_filt_sample = data_filt %>% select(data_class, dataclassTN, tissue_type, sample, fusion_name) %>% 
-            unique() %>% group_by(data_class, dataclassTN, tissue_type, sample) %>% tally(name='fusion_count')
+            unique() %>% group_by(data_class, dataclassTN, tissue_type, sample) %>% tally(name='fusion_count') %>% ungroup()
         
         counts_per_filt_sample = left_join(samples_n_tissues, counts_per_filt_sample, 
                                            by=c('data_class', 'dataclassTN', 'tissue_type', 'sample')) %>%
@@ -116,7 +116,7 @@ tissue_fusion_counts_vs_min_ffpm = get_fusion_counts_vs_min_FFPM_via_tissue_type
 
 median_tissue_fusion_counts = tissue_fusion_counts_vs_min_ffpm  %>% 
     group_by(data_class, dataclassTN, tissue_type, min_ffpm) %>% 
-    summarize(median_fusion_count = median(fusion_count)) %>% ungroup()
+    summarise_at(vars(fusion_count), list(median_fusion_count = median)) %>% ungroup()
 
 median_tissue_fusion_counts 
 ```
@@ -482,6 +482,9 @@ when we find cosmic fusions in normal GTEx, at what fractions of samples?
 
 
 cosmic_fusion_occurrence %>% filter(grepl("GTEx", sample_tissue)) %>% arrange(desc(sample_pct))
+
+# when we find COSMIC fusions in GTEx normal samples, they are found at low frequencies (< 1% prevalence in a tissue type).
+
 ```
 
 
@@ -521,5 +524,11 @@ ggsave("cosmic_ffpm_dist.svg", p, width=7.65, height=5.1)
 
 ```
 
+
+```{r}
+
+
+
+```
 
 

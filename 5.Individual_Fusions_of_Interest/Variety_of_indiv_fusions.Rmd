@@ -172,6 +172,9 @@ orig_STARF_fusion_preds %>% filter(fusion_name == "TMPRSS2::ERG") %>% select(sam
 # TMPRSS2--ERG in FI screen:
 
 fusion_data %>% filter(fusion_name == "TMPRSS2::ERG") %>% filter(is_primary) %>% group_by(data_class, tumor_or_normal, tissue_type) %>% tally()
+
+# 182 tumor
+# normal: 5 tcga, 1 gtex
 ```
 
 
@@ -363,7 +366,7 @@ pvt1_myc_tumor_ffpms = fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% fi
 
 wilcox.test(pvt1_myc_tumor_ffpms, pvt1_myc_normal_ffpms, alternative = 'greater')
 
-
+# we do not find strong evidence for expression to be generally higher in tumor samples than normals (p < 0.07, Wilcoxon rank sum test).
 
 ```
 
@@ -401,30 +404,20 @@ fusion_data %>% filter(fusion_name == "PVT1::MYC") %>%
 
 PVT1--MYC is expressed more highly in CESC than the others.
 
-```{r}
-
-pvt1_myc_normal_ffpms = orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1::MYC") %>% filter(is_primary) %>% filter(tumor_or_normal == "normal") %>% pull(FFPM)
-
-pvt1_myc_tumor_ffpms = orig_STARF_fusion_preds %>% filter(fusion_name == "PVT1::MYC") %>% filter(is_primary) %>% filter(tumor_or_normal == "tumor") %>% pull(FFPM)
-
-wilcox.test(pvt1_myc_tumor_ffpms, pvt1_myc_normal_ffpms, exact = F, alternative = 'greater')
-
-
-```
-
-
-Compare CESC expression to all other samples
-
 
 ```{r}
 
 pvt1_myc_CESC_ffpms = fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% filter(is_primary) %>% filter(tissue_type == "CESC") %>% pull(FFPM)
 
+length(pvt1_myc_CESC_ffpms)
+
 pvt1_myc_OTHER_ffpms = fusion_data %>% filter(fusion_name == "PVT1::MYC") %>% filter(is_primary) %>% filter(tissue_type != "CESC") %>% pull(FFPM)
+
+length(pvt1_myc_OTHER_ffpms)
 
 wilcox.test(pvt1_myc_CESC_ffpms, pvt1_myc_OTHER_ffpms, exact = F, alternative = 'greater')
 
-
+# five of the 32 PVT1::MYC occurrences were identified in cervical cancer tumors, and all were significantly more highly expressed than the other samples (p < 0.001),
 
 ```
 
@@ -485,6 +478,8 @@ VTI1A_TCF7L2_fusions %>% ggplot(aes(x=tissue_type, y=FFPM, color=tumor_or_normal
     geom_point(position='jitter', alpha=0.7)  + 
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=rel(1)))
 
+# was most abundant in stomach, colon, and esophageal carcinoma samples, but also detected in seven individual GTEx normal samples (brain, whole blood, tibial nerve, tibial artery, prostate, and breast)  
+
 ```
 
 
@@ -496,7 +491,11 @@ VTI1A_TCF7L2_fusions %>% select(sample, tissue_type, tumor_or_normal, FFPM, est_
     arrange(desc(FFPM))
 ```
 
+```{r}
+VTI1A_TCF7L2_fusions %>% group_by(tumor_or_normal) %>% tally()
 
+
+```
 
 
 ## CELA3A--CPA2
@@ -555,6 +554,8 @@ w
 
 ```{r}
 examine_sample_fractions_with_fusion("TFG::GPR128")
+
+# median = 1.7%
 ```
 
 
