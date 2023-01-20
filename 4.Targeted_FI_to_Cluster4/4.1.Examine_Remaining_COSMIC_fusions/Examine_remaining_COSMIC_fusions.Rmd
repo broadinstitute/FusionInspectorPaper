@@ -37,7 +37,7 @@ C4_targeted_fusions_in_COSMIC = intersect(C4_targeted_fusions, starF_COSMIC_fusi
 # See which COSMIC fusions were not explored earlier:
 
 missing_COSMIC_fusions = setdiff(starF_COSMIC_fusions, C4_targeted_fusions ) 
-# these 27 were not originally selected because of not meeting the requirements intially set out for recurrent fusions of initial interest.
+# these 27 were not originally selected because of not meeting the requirements initially set out for recurrent fusions of initial interest.
 
 missing_COSMIC_fusions
 
@@ -151,6 +151,21 @@ new_data_COSMIC %>% mutate(cosmic_containing_cluster = ifelse(pred_cluster %in% 
 # Over 80% of these COSMIC fusion occurrences were predicted to other COSMIC fusion containing clusters
 
 ```
+
+```{r}
+# how many of the 27 fusions were not in C4 but found with representation among other COSMIC-min2-clusters?
+
+fusions_in_C4 = new_data_COSMIC %>% filter(pred_cluster == 4) %>% select(fusion_name) %>% unique() %>% pull(fusion_name)
+
+new_data_COSMIC %>% filter(! fusion_name %in% fusions_in_C4) %>% filter(pred_cluster %in% clusters_w_min2_COSMIC) %>% select(fusion_name) %>% unique()
+
+# 13 COSMIC fusions w/o C4 representation but still in clusters_w_min2_COSMIC
+
+# 13/27 = 48%
+
+```
+
+
 
 
 
