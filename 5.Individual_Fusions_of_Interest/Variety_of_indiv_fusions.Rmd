@@ -178,6 +178,23 @@ fusion_data %>% filter(fusion_name == "TMPRSS2::ERG") %>% filter(is_primary) %>%
 ```
 
 
+```{r}
+
+# Are the TCGA TMPRSS2--ERG containing normal samples also having the fusion in the matched tumors?
+
+participants_with_TMPRSS2_ERG_fusion = fusion_data %>% filter(fusion_name == "TMPRSS2::ERG") %>% filter(is_primary) %>% filter(tumor_or_normal == "normal") %>% select(sample) %>% unique() %>% mutate(participant = str_replace(sample, "-[^\\-]+$", ""))  %>% pull(participant)
+
+
+fusion_data %>% filter(fusion_name == "TMPRSS2::ERG") %>%  mutate(participant = str_replace(sample, "-[^\\-]+$", "")) %>% filter(participant %in% participants_with_TMPRSS2_ERG_fusion) %>% filter(is_primary) %>% arrange(sample)
+
+# all 5 prostate noraml samples with TMPRSS2--ERG are also found in the corresponding tumors.
+
+```
+
+
+
+
+
 
 ```{r}
 
