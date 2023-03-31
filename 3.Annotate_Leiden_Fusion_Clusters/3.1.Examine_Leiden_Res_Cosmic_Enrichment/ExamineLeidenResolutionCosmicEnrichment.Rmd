@@ -11,6 +11,10 @@ library(tidyverse)
 ```
 
 
+Analysis of leiden resolution, cluster sizes, and COSMIC enrichment within clusters.
+
+Used to generate Figure S4c
+
 
 ```{r}
 run_fishers_exact_test = function(yes_cosmic, no_cosmic, tot_cosmic_fusions, tot_noncosmic_fusions) {
