@@ -63,7 +63,7 @@ The structure of this work can be divided into the following order:
     - [4.Targeted_FI_to_Cluster4/4.1.Examine_Remaining_COSMIC_fusions/Examine_remaining_COSMIC_fusions.Rmd](4.Targeted_FI_to_Cluster4/4.1.Examine_Remaining_COSMIC_fusions/Examine_remaining_COSMIC_fusions.Rmd): Exploring the other COSMIC fusions that were not included in the earlier survey of 236 fusions but were found among other samples initially by STAR-Fusion. Yields Figure S6c.
    
 - 5.Explorations of specific gene fusions in TCGA and GTEx, as detailed below.
-  - [5.Individual_Fusions_of_Interest/Variety_of_indiv_fusions.Rmd](5.Individual_Fusions_of_Interest/Variety_of_indiv_fusions.Rmd) : includes studies of TMPRSS2--ERG, FGFR3--TACC3, CCAT1--CASC8, VCL--ADK, PVT1--MYC, BCR--ABL1, VTI1A--TCF7L2, CELA3A--CPA2, SSX-SS18, TFG--GPR128 and yields corresponding supplementary figures.
+  - [5.Individual_Fusions_of_Interest/Variety_of_indiv_fusions.Rmd](5.Individual_Fusions_of_Interest/Variety_of_indiv_fusions.Rmd) : includes studies of TMPRSS2--ERG , FGFR3--TACC3, CCAT1--CASC8, VCL--ADK, PVT1--MYC (Figure S6f), BCR--ABL1, VTI1A--TCF7L2 (Figure S6g), CELA3A--CPA2, SSX-SS18, TFG--GPR128 (Figure S6e) and yields corresponding supplementary figures.
   - [5.Individual_Fusions_of_Interest/COL1A1--FN1.Rmd](5.Individual_Fusions_of_Interest/COL1A1--FN1.Rmd) : COL1A1--FN1 in CAFs, yields Figure S2
   - [5.Individual_Fusions_of_Interest/EML4--ALK.Rmd](5.Individual_Fusions_of_Interest/EML4--ALK.Rmd) : EML4--ALK, yields Figure 3a
   - [5.Individual_Fusions_of_Interest/FSIP1--RP11-624L4.1.Rmd](5.Individual_Fusions_of_Interest/FSIP1--RP11-624L4.1.Rmd) : FSIP1--RP11-624L4.1, yields Figure S6h.
