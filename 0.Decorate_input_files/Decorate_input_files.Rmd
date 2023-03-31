@@ -159,7 +159,7 @@ orig_starF_fusions_FULL = orig_starF_fusions_FULL %>% select(-annot_adj)
 
 ```
 
-Save outputs for use downstream use.
+Save outputs for downstream use.
 
 ```{r}
 # the decorated STAR-Fusion fusion predictions file
