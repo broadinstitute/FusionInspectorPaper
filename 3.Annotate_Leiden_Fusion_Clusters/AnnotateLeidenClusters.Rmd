@@ -352,11 +352,11 @@ fusion_data = fusion_data %>% mutate(fusion_cluster_att = ifelse(leiden %in% hig
 fusion_data %>% filter(is_primary) %>% group_by(fusion_cluster_att) %>% tally() %>% mutate(pct=prop.table(n))
 
 # fusion_cluster_att  n    pct
-# cosmic-like	1511	0.03915421
-# expr_microH_RT_artifact?	756	0.01959006
-# high_FAR_microH_bioinf_artifact?	444	0.01150527
-# high-counter-evidence	373	0.009665466
-# NA	35880	0.92975046
+# cosmic-like	1511	0.03915
+# expr_microH_RT_artifact?	756	0.01959
+# high_FAR_microH_bioinf_artifact?	444	0.01150
+# high-counter-evidence	373	0.009665
+
 
 ```
 
@@ -463,7 +463,7 @@ cosmic_FAR_data %>%
   ggplot(aes(x=FAR_type, y=FAR_val)) + geom_boxplot() + facet_wrap(~fusion_name, scale='free_y')
 ```
 
-- used for Figure S5:
+- used for Figure S4b:
 
 ```{r}
 
