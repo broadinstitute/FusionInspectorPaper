@@ -31,6 +31,10 @@ data = data %>% mutate(dataclassTN = paste0(data_class, "-", tumor_or_normal))
 
 data %>% select(dataclassTN, sample) %>% unique() %>% ungroup() %>% group_by(dataclassTN) %>% tally()
 
+# GTEx-normal   8375
+# TCGA-normal    707
+# TCGA-tumor    9426
+
 ```
 
 Perform some initial filtering, removing mitochondrial fusions, HLA and immunoglobulin fusions so that they don't confound aspects of our analysis.
@@ -140,7 +144,7 @@ median_tissue_fusion_counts %>% filter(dataclassTN == "TCGA-tumor") %>%
 
 Jitter plots for counts of fusions per tissue type according to data class (ie. tcga-tumor, tcga-normal, and gtex-normal)
 
-- Used to generate Figure S4a
+- Used to generate Figure S3b
 
 ```{r}
 
@@ -224,7 +228,7 @@ Below we examine paired tumor/normal samples from TCGA to see whether we detect 
 
 Here we plot TCGA tumor/normal median fusion counts according to matched sample types and examine the effect of filtering based on min FFPM.
 
-- used for Figure S4b
+- used for Figure S3a
 
 
 ```{r}
@@ -434,7 +438,7 @@ cosmic_fusion_occurrence = data2 %>% filter(data_class == "GTEx" | tumor_or_norm
     mutate(sample_tissue = paste(data_class, tissue_type)) %>% 
     select (fusion_name, sample_tissue) %>% 
     group_by(fusion_name, sample_tissue) %>% 
-    tally()
+    tally() %>% ungroup()
 
 
 sample_tissue_counts = data2 %>% filter(data_class == "GTEx" | tumor_or_normal == "tumor") %>% 
@@ -443,9 +447,8 @@ sample_tissue_counts = data2 %>% filter(data_class == "GTEx" | tumor_or_normal =
     select(sample, sample_tissue) %>% 
     unique() %>% 
     group_by(sample_tissue) %>% 
-    tally()
+    tally(name='sample_tissue_count') %>% ungroup()
 
-sample_tissue_counts = sample_tissue_counts %>% rename(sample_tissue_count = n)
 
 cosmic_fusion_occurrence = left_join(x=cosmic_fusion_occurrence, y=sample_tissue_counts, by='sample_tissue')
 
@@ -525,10 +528,6 @@ ggsave("cosmic_ffpm_dist.svg", p, width=7.65, height=5.1)
 ```
 
 
-```{r}
 
-
-
-```
 
 
