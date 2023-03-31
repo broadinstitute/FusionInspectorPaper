@@ -1,0 +1,48 @@
+---
+title: "Fusion annot class stats study"
+author: "Brian Haas"
+date: "8/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## R Markdown
+
+```{r}
+
+data = read.table("fusion_annot_class_stats.tsv", header=T, sep="\t", stringsAsFactors = F, check.names = F)
+
+data
+```
+
+
+
+
+
+```{r}
+# how many lacking C4 representation?
+
+data %>% filter(`COSMIC-like` == 0)
+
+
+```
+
+
+
+
+
+```{r}
+# how many with artifacts?
+
+data %>% filter(artifact > 0)
+
+```
+
+
+
+
+
