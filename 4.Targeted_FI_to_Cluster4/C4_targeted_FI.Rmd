@@ -145,7 +145,7 @@ fusion_annot_class_stats_gathered %>%
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size=rel(0.3) ))
 ```
 
-
+For Figure 6 (but see make_Figures.Rmd for adjustments)
 
 ```{r}
 
@@ -155,7 +155,7 @@ plot_ranked_fusions(fusions_ranked_by_logTN)
 
 ```
 
-
+For Figure S5 (but see make_Figures.Rmd for adjustments)
 
 
 ```{r}
@@ -265,8 +265,8 @@ fusions_in_mult_normals_n_tissues  %>% group_by(structure_type) %>% tally()
 
 
 # INTERCHR	1			
-# IntraCHR	31			
-# READTHRU	29	
+# IntraCHR	20+14 = 34			
+# READTHRU	26	
 
 ```
 
