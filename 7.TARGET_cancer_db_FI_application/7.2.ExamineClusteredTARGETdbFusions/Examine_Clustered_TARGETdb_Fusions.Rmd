@@ -15,6 +15,11 @@ library(ggforce)
 
 ```
 
+# Target fusion analysis
+
+COSMIC fusions are located in leiden clusters, highlighted in the umap ordination, and feature attributes are explored.
+
+Main figure 7 and Supp figure S7b generated here.
 
 ```{r}
 
@@ -79,7 +84,7 @@ plot(umap_plot)
 ```
 
 
-
+For Figure S7b
 
 ```{r}
 
@@ -340,6 +345,8 @@ frac_cluster_att_predictions_plot = frac_cluster_predictions  %>%
 plot(frac_cluster_att_predictions_plot)
 
 ```
+
+For Figure 7a
 
 ```{r}
 
@@ -768,7 +775,7 @@ fusion_fraction_artifact_clusters
 
 
 
-# select top new candidates
+# select top new candidates having C21 representation, recurrent, and not found in normal (or cosmic))
 
 ```{r}
 
@@ -782,6 +789,9 @@ top_new_candidates = fusion_fraction_C21 %>%
 
 
 top_new_candidates  %>% select(-c(sorted_fusion_name, annots))
+
+# 108 candidates
+
 ```
 
 
@@ -1115,6 +1125,7 @@ chrom_structure_plot
 ```
 
 
+For Figure 7b - the 108 C21-represented fusions and attributes
 
 
 ```{r}

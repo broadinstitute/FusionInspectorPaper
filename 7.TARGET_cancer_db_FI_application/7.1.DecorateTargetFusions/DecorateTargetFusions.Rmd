@@ -11,6 +11,8 @@ library(tidyverse)
 ```
 
 
+Methods used for generating data/FusionInspector.v2.4.0.TARGET.decorated.tsv including fusion annotations and umap coords.
+
 ```{r}
 
 data = read.table(gzfile("../../data/FusionInspector.v2.4.0.TARGET.tsv.gz"), header=T, sep="\t", stringsAsFactors = F)

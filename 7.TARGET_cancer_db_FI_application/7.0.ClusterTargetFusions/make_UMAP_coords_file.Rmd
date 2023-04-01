@@ -11,6 +11,10 @@ library(tidyverse)
 ```
 
 
+Methods used to generate data/FusionInspector.v2.4.0.TARGET.umap_coords.tsv.gz 
+incorporating the umap coordinates for runs at different frandom fractions of all fusions.
+
+
 ```{r}
 
 load("saved_RData/saved.0.2.final.RData")
