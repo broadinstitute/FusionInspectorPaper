@@ -5,6 +5,9 @@ date: "2/01/2021"
 output: html_document
 ---
 
+# Evaluating fusion cluster prediction accuracy
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
@@ -302,6 +305,9 @@ prediction_accuracies_df_stats = prediction_accuracies_df %>% filter(Var1==Var2)
 prediction_accuracies_df_stats
 ```
 
+
+Used for Figure S6a
+
 ```{r}
 
 prediction_accuracies_df_stats %>%  ggplot(aes(x=Var1, y=mean_pct)) +  
@@ -388,7 +394,7 @@ cosmic_counts_per_cluster = bind_rows(empty_counts_df, cosmic_counts_per_cluster
 ```
 
 
-
+Used for Fig S6a
 
 
 ```{r}

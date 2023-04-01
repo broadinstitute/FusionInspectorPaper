@@ -125,7 +125,7 @@ combined_results %>% group_by(fusion_cluster_att.x, fusion_cluster_att.y) %>% ta
 
 ```
 
-
+Used for Figure S6b
 
 ```{r}
 
@@ -149,7 +149,7 @@ consistency_stats
 
 ```
 
-
+Used for Figure S6b
 
 ```{r}
 
