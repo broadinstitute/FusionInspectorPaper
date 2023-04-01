@@ -24,8 +24,6 @@ SSX-SS18
 TFG--GPR128
 
 
-
-
 ```{r}
 
 orig_STARF_fusion_preds = read.table(gzfile("../data/TCGA_n_GTEx.STAR-Fusion.v1.7.fusion_preds.decorated.tsv.gz"), 

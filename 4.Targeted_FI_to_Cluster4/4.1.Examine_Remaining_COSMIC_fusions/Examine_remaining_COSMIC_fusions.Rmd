@@ -88,6 +88,8 @@ new_data_COSMIC = new_data_COSMIC %>% group_by(sample, fusion_name) %>% arrange(
 
 ```
 
+Used for Fig S6c
+
 ```{r}
 
 # show counts of these earlier-excluded COSMIC fusions among their predicted fusion clusters
