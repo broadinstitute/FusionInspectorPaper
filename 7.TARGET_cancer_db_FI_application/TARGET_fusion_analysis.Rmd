@@ -26,6 +26,8 @@ target_project_sample_counts = target_sample_info %>% select(sample, project, tu
 
 target_project_sample_counts
 
+#  Acute Lymphoblastic Leukemia (ALL, 666 tumors), Acute Myeloid Leukemia (AML, 217 tumors and 20 normal samples), Clear Cell Sarcoma of the Kidney (CCSK, 13 tumors), Neuroblastoma (NB,  157 tumors), Osteosarcoma (OS, 88 tumors), Rhabdoid Tumor (RT, 63 tumors and 6 normal), and Wilms Tumor (WT, 130 tumors and 6 normal).
+
 ```
 
 ```{r}
@@ -144,6 +146,7 @@ so, 86% of the STAR-F identified fusions were further 'in silico validated' by F
 # count number of distinct fusion gene pairs represented:
 FI_data %>% select(fusion_name)  %>% unique() %>% nrow()
 
+# 88307
 
 ```
 
@@ -175,6 +178,8 @@ TARGET_cosmic_fusion_participant_counts %>% arrange(desc(sample_type_frac))
 
 # how many unique COSMIC fusions found in TARGET
 TARGET_cosmic_fusion_participant_counts %>% select(fusion_name) %>% unique() %>% nrow()
+
+# 30
 
 ```
 
@@ -280,6 +285,8 @@ cosmic_fusion_participant_counts %>% filter(! fusion_name %in% tcga_gtex_stats$f
 cosmic_fusion_participant_counts %>% ungroup() %>% filter(! fusion_name %in% tcga_gtex_stats$fusion_name) %>% 
   select(fusion_name) %>% unique() %>% nrow()
 
+# 22
+
 ```
 
 ```{r}
@@ -301,8 +308,12 @@ in_TCGA_indicator_plot = TARGET_cosmic_fusion_participant_counts  %>% mutate(in_
    scale_fill_manual(na.value="white", values="purple")
 
  in_TCGA_indicator_plot   
+ 
+ # 8 shown in TCGA
+ 
 ```
 
+Figure S7a
 
 
 ```{r}
